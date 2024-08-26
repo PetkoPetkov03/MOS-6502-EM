@@ -93,13 +93,10 @@ struct CPU {
 
     Word FetchWord(u32& Cycles, Mem& memory)
     {
-        Word Data = memory[PC];
-        PC++;
+        Word Data = Fetch(Cycles, memory);
 
-        Data |= (memory[PC] << 8);
-        PC++;
+        Data |= (Fetch(Cycles, memory) << 8);
 
-        Cycles -= 2;
 
         return Data;
     }
@@ -115,9 +112,13 @@ struct CPU {
 
     Word ReadWord(u32& Cycles, Word Address, Mem& memory)
     {
-        Word Data = memory[Address];
+        Word Data = ReadByte(Cycles, Address, memory);
         
-        Cycles--;
+        if((Address & 0x00FF) == 0x00FF) {
+            Data |= (ReadByte(Cycles, Address & 0xFF00, memory) << 8);
+        }else {
+            Data |= (ReadByte(Cycles, Address + 1, memory) << 8);
+        }
 
         return Data;
     }
@@ -130,13 +131,15 @@ struct CPU {
       INS_LDX_ZP = 0xA6,
       INS_LDX_ZPY = 0xB6,
       INS_LDX_ABS = 0xAE,
+      INS_LDX_ABSY = 0xBE,
+      INS_JMP_ABS = 0x4C,
+      INS_JMP_INR = 0x6C,
       INS_JSR = 0x20;
 
 
     // check zero page overflow
     void CheckZPOverflow(Byte Address)
     {
-        printf("Zero Page overflow: ");
         assert(Address <= 0xFF && "Address is out of zero-page range");
     }
 
@@ -206,6 +209,24 @@ struct CPU {
 
                 }break;
 
+
+                case INS_JMP_ABS:
+                {
+                   Word SubAddr = FetchWord(Cycles, memory);
+                   PC = SubAddr;
+                }break;
+
+                case INS_JMP_INR:
+                {
+                    Word SubAddr = FetchWord(Cycles, memory);
+
+                    Word TargetAddress = ReadWord(Cycles, SubAddr, memory);
+
+                    PC = TargetAddress;
+
+                    printf("JMP IND SUB: %hu TA: %hu PC: %hu\n", SubAddr, TargetAddress, PC);
+                }break;
+
                 case INS_LDX_IM:
                 {
                     Byte Value = Fetch(Cycles, memory);
@@ -225,7 +246,7 @@ struct CPU {
                     RegisterX = ReadByte(Cycles, ZeroPageAddress, memory);
 
                     LDXSetStatus();
-                    printf("Load X ZP BV: %hhx, V: %x Z: %i N: %i X: %hhx \n", RegisterX, RegisterX, Z, N , RegisterX);
+                    printf("Load X ZP BV: %hhx, V: %x Z: %i N: %i X: %hhx \n", RegisterX, RegisterX, Z, N , ZeroPageAddress);
 
                 }break;
 
@@ -249,7 +270,28 @@ struct CPU {
                     RegisterX = ReadByte(Cycles, AbsoluteAddress, memory);
 
                     LDXSetStatus();
+                    printf("Load X ABS ABSV: %hu Y: %hhx, V: %x Z: %i N: %i Y: %hhx \n", AbsoluteAddress, RegisterX, RegisterX, Z, N , RegisterY);
+
                 }break;
+
+                case INS_LDX_ABSY:
+                {
+                    Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+                    Word EffectiveAddress = AbsoluteAddress + RegisterY;
+
+                    RegisterX = ReadByte(Cycles, EffectiveAddress, memory);
+
+                    LDXSetStatus();
+
+                    if((AbsoluteAddress & 0xFF00) != (EffectiveAddress & 0xFF00)) {
+                        Cycles--;
+                    }
+                    
+                    printf("Load X ABS ABSV: %hu Y: %hhx, V: %x Z: %i N: %i Y: %hhx \n", EffectiveAddress, RegisterX, RegisterX, Z, N , RegisterY);
+
+                }break;
+
                 default: 
                 {
                     printf("Instruction not found %hhx \n", Instruction);
@@ -266,12 +308,24 @@ int main()
     CPU cpu;
     cpu.Reset(mem);
 
-    mem[0xFFFC] = CPU::INS_JSR;
-    mem[0xFFFD] = 0x42;
-    mem[0xFFFE] = 0x42;
-    mem[0x4242] = CPU::INS_LDA_IM;
-    mem[0x4243] = 0x84;
-    cpu.Execute(8, mem);
+    // JSR
+    /*mem[0xFFFC] = CPU::INS_JSR;*/
+    /*mem[0xFFFD] = 0x42;*/
+    /*mem[0xFFFE] = 0x42;*/
+    /*mem[0x4242] = CPU::INS_LDA_IM;*/
+    /*mem[0x4243] = 0x84;*/
+
+    // LDX ZP
+    /*mem[0xFFFC] = CPU::INS_LDX_ZP;*/
+    /*mem[0xFFFD] = 0x43;*/
+    /*mem[0x0043] = 0xFF;*/
+
+    mem[0xFFFC] = CPU::INS_JMP_INR;
+    mem[0xFFFD] = 0x34;
+    mem[0xFFFE] = 0x00;
+    mem[0x0034] = 0x12;
+    mem[0x0035] = 0x00;
+    cpu.Execute(5, mem);
 
     return 0;
 }
