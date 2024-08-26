@@ -108,12 +108,6 @@ struct CPU {
     {
         Byte Data = memory[Address];
 
-        if(!Data) 
-        {
-            printf("Address out of scope!");
-            assert(!Data);
-        }
-
         Cycles--;
 
         return Data;
@@ -125,7 +119,16 @@ struct CPU {
       INS_LDA_ZPX = 0xB5,
       INS_LDX_IM = 0xA2,
       INS_LDX_ZP = 0xA6,
+      INS_LDX_ZPY = 0xB6,
       INS_JSR = 0x20;
+
+
+    // check zero page overflow
+    void CheckZPOverflow(Byte Address)
+    {
+        printf("Zero Page overflow: ");
+        assert(Address <= 0xFF && "Address is out of zero-page range");
+    }
 
     void LDASetStatus()
     {
@@ -161,7 +164,7 @@ struct CPU {
                 case INS_LDA_ZP:
                 {
                     Byte ZeroPageAddress = Fetch(Cycles, memory);
-                    
+                    CheckZPOverflow(ZeroPageAddress);
                     ACC = ReadByte(Cycles, ZeroPageAddress, memory);
                     LDASetStatus();
                     printf("ZeroPageAddress BV: %hhx V: %i Z: %i N: %i\n", ACC, ACC, Z, N);
@@ -172,9 +175,11 @@ struct CPU {
                     Byte ZeroPageAddress = Fetch(Cycles, memory);
 
                     ZeroPageAddress += RegisterX;
+                    CheckZPOverflow(ZeroPageAddress);
 
                     Cycles--;
 
+                    ACC = ReadByte(Cycles, ZeroPageAddress, memory);
                     LDASetStatus();
 
                     printf("ZeroPageAddressX %hhx BV: %hhx V: %i Z: %i N: %i X: %hhx \n",  ZeroPageAddress, ACC, ACC, Z, N, RegisterX);
@@ -198,8 +203,34 @@ struct CPU {
                     RegisterX = Value;
 
                     LDXSetStatus();
+
+                    printf("Load X Imidiate BV: %hhx, V: %x Z: %i N: %i X: %hhx \n", RegisterX, RegisterX, Z, N , RegisterX);
                 }break;
 
+                case INS_LDX_ZP:
+                {
+                    Byte ZeroPageAddress = Fetch(Cycles, memory);
+                    CheckZPOverflow(ZeroPageAddress);
+
+                    RegisterX = ReadByte(Cycles, ZeroPageAddress, memory);
+
+                    LDXSetStatus();
+                    printf("Load X ZP BV: %hhx, V: %x Z: %i N: %i X: %hhx \n", RegisterX, RegisterX, Z, N , RegisterX);
+
+                }break;
+
+                case INS_LDX_ZPY:
+                {
+                    Byte ZeroPageAddress = Fetch(Cycles, memory);
+                    ZeroPageAddress += RegisterY;
+                    CheckZPOverflow(ZeroPageAddress);
+
+                    Cycles--;
+
+
+                    RegisterX = ReadByte(Cycles, ZeroPageAddress, memory);
+                    LDXSetStatus();
+                }break;
                 default: 
                 {
                     printf("Instruction not found %hhx \n", Instruction);
