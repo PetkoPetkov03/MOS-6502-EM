@@ -214,6 +214,8 @@ struct CPU {
                 {
                    Word SubAddr = FetchWord(Cycles, memory);
                    PC = SubAddr;
+
+                   printf("JMP ABS PC: %hu\n", PC);
                 }break;
 
                 case INS_JMP_INR:
@@ -325,7 +327,15 @@ int main()
     mem[0xFFFE] = 0x00;
     mem[0x0034] = 0x12;
     mem[0x0035] = 0x00;
-    cpu.Execute(5, mem);
+
+    mem[0x0012] = CPU::INS_JMP_ABS;
+    mem[0x0013] = 0x0085;
+    mem[0x0014] = 0x0000;
+
+    mem[0x0085] = CPU::INS_LDA_IM;
+    mem[0x0086] = 0x10;
+
+    cpu.Execute(10, mem);
 
     return 0;
 }
