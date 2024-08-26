@@ -113,6 +113,15 @@ struct CPU {
         return Data;
     }
 
+    Word ReadWord(u32& Cycles, Word Address, Mem& memory)
+    {
+        Word Data = memory[Address];
+        
+        Cycles--;
+
+        return Data;
+    }
+
     static constexpr Byte 
       INS_LDA_IM = 0xA9, 
       INS_LDA_ZP = 0xA5,
@@ -120,6 +129,7 @@ struct CPU {
       INS_LDX_IM = 0xA2,
       INS_LDX_ZP = 0xA6,
       INS_LDX_ZPY = 0xB6,
+      INS_LDX_ABS = 0xAE,
       INS_JSR = 0x20;
 
 
@@ -229,6 +239,15 @@ struct CPU {
 
 
                     RegisterX = ReadByte(Cycles, ZeroPageAddress, memory);
+                    LDXSetStatus();
+                }break;
+
+                case INS_LDX_ABS:
+                {
+                    Word AbsoluteAddress = FetchWord(Cycles, memory);
+                    
+                    RegisterX = ReadByte(Cycles, AbsoluteAddress, memory);
+
                     LDXSetStatus();
                 }break;
                 default: 
