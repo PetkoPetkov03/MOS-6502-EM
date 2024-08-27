@@ -127,16 +127,70 @@ struct CPU {
       INS_LDA_IM = 0xA9, 
       INS_LDA_ZP = 0xA5,
       INS_LDA_ZPX = 0xB5,
+      INS_LDA_ABS = 0xAD,
+      INS_LDA_ABSX = 0xBD,
+      INS_LDA_ABSY = 0xB9,
+      INS_LDA_INRX = 0xA1,
       INS_LDX_IM = 0xA2,
       INS_LDX_ZP = 0xA6,
       INS_LDX_ZPY = 0xB6,
       INS_LDX_ABS = 0xAE,
       INS_LDX_ABSY = 0xBE,
+      INS_LDY_IM = 0xA0,
+      INS_LDY_ZP = 0xA4,
+      INS_LDY_ZPX = 0xB4,
+      INS_LDY_ABS = 0xAC,
+      INS_LDY_ABSX = 0xBC,
       INS_JMP_ABS = 0x4C,
       INS_JMP_INR = 0x6C,
       INS_JSR = 0x20;
 
+    void SetImmediate(u32& Cycles, Byte& Register, Mem& memory)
+    {
+        Byte Value = Fetch(Cycles, memory);
 
+        Register = Value;
+    }
+
+    void SetZeroPage(u32& Cycles, Byte& Register, Mem& memory)
+    {
+        Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+        CheckZPOverflow(ZeroPageAddress);
+
+        Register = ReadByte(Cycles, ZeroPageAddress, memory);
+    }
+
+    void SetZeroPageByRegister(u32& Cycles, Byte& Register, Byte IncRegister, Mem& memory)
+    {
+        Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+        ZeroPageAddress += IncRegister;
+        CheckZPOverflow(ZeroPageAddress);
+        Cycles--;
+
+        Register = ReadByte(Cycles, ZeroPageAddress, memory);
+    }
+
+    void SetAbsolute(u32& Cycles, Byte& Register, Mem& memory)
+    {
+        Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+        Register = ReadByte(Cycles, AbsoluteAddress, memory);
+    }
+
+    void SetAbsoluteByRegister(u32& Cycles, Byte& Register, Byte IncRegister, Mem& memory)
+    {
+        Word AbsoluteAddress = FetchWord(Cycles, memory);
+        Word EffectiveAddress = AbsoluteAddress + RegisterX;
+
+        ACC = ReadByte(Cycles, EffectiveAddress, memory);
+
+        if((AbsoluteAddress & 0xFF00) != (EffectiveAddress & 0xFF00)) {
+                        Cycles--;
+        }
+    }
+    
     // check zero page overflow
     void CheckZPOverflow(Byte Address)
     {
@@ -155,6 +209,19 @@ struct CPU {
         N = (RegisterX & (1 << 7)) > 0;
     }
 
+    void LDYSetStatus()
+    {
+        Z = (RegisterY==0);
+        N = (RegisterY & (1 << 7)) > 0;
+    }
+
+    void ZeroPageWrapAround(u32& Cycles, Byte& Address)
+    {
+        Address = Address & 0xFF; 
+
+        Cycles--;
+    }
+
     void Execute( u32 Cycles, Mem& memory )
     {
         while (Cycles > 0)
@@ -167,35 +234,50 @@ struct CPU {
             {
                 case INS_LDA_IM:
                 {
-                    Byte Value = Fetch(Cycles, memory);
-
-                    ACC = Value;
+                    SetImmediate(Cycles, ACC, memory);
                     LDASetStatus();
                     printf("Imidiate BV: %hhx V: %i Z: %i N: %i\n", ACC, ACC, Z, N);
                 }break;
 
                 case INS_LDA_ZP:
                 {
-                    Byte ZeroPageAddress = Fetch(Cycles, memory);
-                    CheckZPOverflow(ZeroPageAddress);
-                    ACC = ReadByte(Cycles, ZeroPageAddress, memory);
+                    SetZeroPage(Cycles, ACC, memory);
                     LDASetStatus();
                     printf("ZeroPageAddress BV: %hhx V: %i Z: %i N: %i\n", ACC, ACC, Z, N);
                 }break;
 
                 case INS_LDA_ZPX:
                 {
-                    Byte ZeroPageAddress = Fetch(Cycles, memory);
-
-                    ZeroPageAddress += RegisterX;
-                    CheckZPOverflow(ZeroPageAddress);
-
-                    Cycles--;
-
-                    ACC = ReadByte(Cycles, ZeroPageAddress, memory);
+                    SetZeroPageByRegister(Cycles, ACC, RegisterX, memory);
                     LDASetStatus();
 
-                    printf("ZeroPageAddressX %hhx BV: %hhx V: %i Z: %i N: %i X: %hhx \n",  ZeroPageAddress, ACC, ACC, Z, N, RegisterX);
+                    printf("ZeroPageAddressX  BV: %hhx V: %i Z: %i N: %i X: %hhx \n", ACC, ACC, Z, N, RegisterX);
+                }break;
+
+                case INS_LDA_ABS:
+                {
+                    SetAbsolute(Cycles, ACC, memory);
+
+                    LDASetStatus();
+                    printf("LDA ABS ACC: %hhx Z: %i N: %i \n", ACC, Z, N);
+                }break;
+
+                case INS_LDA_ABSX:
+                {
+                    SetAbsoluteByRegister(Cycles, ACC, RegisterX, memory);
+
+                    LDASetStatus();
+                }break;
+
+                case INS_LDA_ABSY:
+                {
+                    SetAbsoluteByRegister(Cycles, ACC, RegisterY, memory);
+
+                    LDASetStatus();
+                }break;
+
+                case INS_LDA_INRX:
+                { 
                 }break;
 
                 case INS_JSR:
@@ -231,9 +313,7 @@ struct CPU {
 
                 case INS_LDX_IM:
                 {
-                    Byte Value = Fetch(Cycles, memory);
-
-                    RegisterX = Value;
+                    SetImmediate(Cycles, RegisterX, memory);
 
                     LDXSetStatus();
 
@@ -242,56 +322,71 @@ struct CPU {
 
                 case INS_LDX_ZP:
                 {
-                    Byte ZeroPageAddress = Fetch(Cycles, memory);
-                    CheckZPOverflow(ZeroPageAddress);
-
-                    RegisterX = ReadByte(Cycles, ZeroPageAddress, memory);
+                    SetZeroPage(Cycles, RegisterX, memory);
 
                     LDXSetStatus();
-                    printf("Load X ZP BV: %hhx, V: %x Z: %i N: %i X: %hhx \n", RegisterX, RegisterX, Z, N , ZeroPageAddress);
+                    printf("Load X ZP BV: %hhx, V: %x Z: %i N: %i  \n", RegisterX, RegisterX, Z, N);
 
                 }break;
 
                 case INS_LDX_ZPY:
                 {
-                    Byte ZeroPageAddress = Fetch(Cycles, memory);
-                    ZeroPageAddress += RegisterY;
-                    CheckZPOverflow(ZeroPageAddress);
-
-                    Cycles--;
-
-
-                    RegisterX = ReadByte(Cycles, ZeroPageAddress, memory);
+                    SetZeroPageByRegister(Cycles, RegisterX, RegisterY, memory);
                     LDXSetStatus();
                 }break;
 
                 case INS_LDX_ABS:
                 {
-                    Word AbsoluteAddress = FetchWord(Cycles, memory);
-                    
-                    RegisterX = ReadByte(Cycles, AbsoluteAddress, memory);
+                    SetAbsolute(Cycles, RegisterX, memory);
 
                     LDXSetStatus();
-                    printf("Load X ABS ABSV: %hu Y: %hhx, V: %x Z: %i N: %i Y: %hhx \n", AbsoluteAddress, RegisterX, RegisterX, Z, N , RegisterY);
+                    printf("Load X ABS X: %hhx, V: %x Z: %i N: %i Y: %hhx \n", RegisterX, RegisterX, Z, N , RegisterY);
 
                 }break;
 
                 case INS_LDX_ABSY:
                 {
-                    Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-                    Word EffectiveAddress = AbsoluteAddress + RegisterY;
-
-                    RegisterX = ReadByte(Cycles, EffectiveAddress, memory);
-
+                    SetAbsoluteByRegister(Cycles, RegisterX, RegisterY, memory);
+                      
                     LDXSetStatus();
+                    printf("Load X ABS X: %hhx, V: %x Z: %i N: %i Y: %hhx \n", RegisterX, RegisterX, Z, N , RegisterY);
 
-                    if((AbsoluteAddress & 0xFF00) != (EffectiveAddress & 0xFF00)) {
-                        Cycles--;
-                    }
-                    
-                    printf("Load X ABS ABSV: %hu Y: %hhx, V: %x Z: %i N: %i Y: %hhx \n", EffectiveAddress, RegisterX, RegisterX, Z, N , RegisterY);
+                }break;
 
+                case INS_LDY_IM:
+                {
+                    SetImmediate(Cycles, RegisterY, memory);
+
+                    LDYSetStatus();
+
+                    printf("Load Y IM Y: %hhx, V: %x Z: %i N: %i \n", RegisterY, RegisterY, Z, N);
+
+                }break;
+
+                case INS_LDY_ZP:
+                {
+                    SetZeroPage(Cycles, RegisterY, memory);
+                    LDYSetStatus();
+                }break;
+
+                case INS_LDY_ZPX:
+                {
+                    SetZeroPageByRegister(Cycles, RegisterY, RegisterX, memory);
+                    LDYSetStatus();
+                }break;
+
+                case INS_LDY_ABS:
+                {
+                    SetAbsolute(Cycles, RegisterY, memory);
+
+                    LDYSetStatus();
+                }break;
+
+                case INS_LDY_ABSX:
+                {
+                    SetAbsoluteByRegister(Cycles, RegisterY, RegisterX, memory);
+
+                    LDYSetStatus();
                 }break;
 
                 default: 
@@ -332,10 +427,13 @@ int main()
     mem[0x0013] = 0x0085;
     mem[0x0014] = 0x0000;
 
-    mem[0x0085] = CPU::INS_LDA_IM;
-    mem[0x0086] = 0x10;
+    mem[0x0085] = CPU::INS_LDA_ABS;
+    mem[0x0086] = 0x43;
+    mem[0x0087] = 0x00;
 
-    cpu.Execute(10, mem);
+    mem[0x0043] = 0x32;
+
+    cpu.Execute(12, mem);
 
     return 0;
 }
