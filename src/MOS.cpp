@@ -129,6 +129,7 @@ struct CPU {
       INS_LDA_ABSX = 0xBD,
       INS_LDA_ABSY = 0xB9,
       INS_LDA_INRX = 0xA1,
+      INS_LDA_INRY = 0xB1,
       INS_LDX_IM = 0xA2,
       INS_LDX_ZP = 0xA6,
       INS_LDX_ZPY = 0xB6,
@@ -141,7 +142,11 @@ struct CPU {
       INS_LDY_ABSX = 0xBC,
       INS_JMP_ABS = 0x4C,
       INS_JMP_INR = 0x6C,
-      INS_JSR = 0x20;
+      INS_JSR = 0x20,
+      INS_STR_AZP = 0x85,
+      INS_STR_AZPX = 0x95,
+      INS_STR_AABS = 0x8D,
+      INS_STR_AABSX = 0x9D;
 
     void SetImmediate(u32& Cycles, Byte& Register, Mem& memory)
     {
@@ -180,9 +185,9 @@ struct CPU {
     void SetAbsoluteByRegister(u32& Cycles, Byte& Register, Byte IncRegister, Mem& memory)
     {
         Word AbsoluteAddress = FetchWord(Cycles, memory);
-        Word EffectiveAddress = AbsoluteAddress + RegisterX;
+        Word EffectiveAddress = AbsoluteAddress + IncRegister;
 
-        ACC = ReadByte(Cycles, EffectiveAddress, memory);
+        Register = ReadByte(Cycles, EffectiveAddress, memory);
 
         if((AbsoluteAddress & 0xFF00) != (EffectiveAddress & 0xFF00)) {
                         Cycles--;
@@ -275,7 +280,42 @@ struct CPU {
                 }break;
 
                 case INS_LDA_INRX:
-                { 
+                {
+                    Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+                    ZeroPageAddress += RegisterX;
+
+                    ZeroPageAddress = ZeroPageAddress & 0xFF;
+                    Cycles--;
+
+                    Word EffectiveAddress = ReadWord(Cycles, ZeroPageAddress, memory);
+
+                    ACC = ReadByte(Cycles, EffectiveAddress, memory);
+                    LDASetStatus();
+
+                }break;
+
+                case INS_LDA_INRY:
+                {
+                    Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+                    Byte HighByte = ReadByte(Cycles, ZeroPageAddress+1, memory);
+
+                    Byte FullAddress = ZeroPageAddress;
+                    FullAddress |= HighByte;
+
+                    FullAddress += RegisterY;
+
+                    Word EffectiveAddress = ReadWord(Cycles, FullAddress, memory);
+
+                    ACC = ReadByte(Cycles, EffectiveAddress, memory);
+
+                    if((FullAddress & 0xFF00) != (EffectiveAddress & 0xFF00)) 
+                    {
+                        Cycles--;
+                    }
+
+                    LDASetStatus();
                 }break;
 
                 case INS_JSR:
@@ -387,6 +427,53 @@ struct CPU {
                     LDYSetStatus();
                 }break;
 
+                case INS_STR_AZP:
+                {
+                    Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+                    Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+                    memory[Value] = ACC;
+
+                    printf("STA ACC: %hhx mem: %hhx, memv: %hu\n", ACC, memory[Value], memory[Value]);
+                }break;
+
+                case INS_STR_AZPX:
+                {
+                    Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+                    ZeroPageAddress += RegisterX;
+                    Cycles--;
+
+                    Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+                    memory[Value] = ACC;
+
+                    printf("STAZPX ACC: %hhx mem: %hhx mem: %hu, Address %hhx \n", ACC, memory[Value], memory[Value], ZeroPageAddress);
+                }break;
+
+                case INS_STR_AABS:
+                {
+                    Word AbsoluteAddress = FetchWord(Cycles, memory);
+                    
+                    Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+                    memory[Value] = ACC;
+                }break;
+
+                case INS_STR_AABSX:
+                {
+                    Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+                    AbsoluteAddress += RegisterX;
+
+                    Cycles--;
+
+                    Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+                    memory[Value] = ACC;
+                }break;
+
                 default: 
                 {
                     printf("Instruction not found %hhx \n", Instruction);
@@ -415,23 +502,43 @@ int main()
     /*mem[0xFFFD] = 0x43;*/
     /*mem[0x0043] = 0xFF;*/
 
-    mem[0xFFFC] = CPU::INS_JMP_INR;
-    mem[0xFFFD] = 0x34;
-    mem[0xFFFE] = 0x00;
-    mem[0x0034] = 0x12;
-    mem[0x0035] = 0x00;
+    mem[0xFFFC] = CPU::INS_JSR;
+    mem[0xFFFD] = 0x42;
+    mem[0xFFFE] = 0x42;
 
-    mem[0x0012] = CPU::INS_JMP_ABS;
-    mem[0x0013] = 0x0085;
-    mem[0x0014] = 0x0000;
+    mem[0x4242] = CPU::INS_LDA_IM;
+    mem[0x4243] = 0x32;
 
-    mem[0x0085] = CPU::INS_LDA_ABS;
-    mem[0x0086] = 0x43;
-    mem[0x0087] = 0x00;
+    mem[0x4244] = CPU::INS_STR_AZP;
+    mem[0x4245] = 0x44;
+    mem[0x0044] = 0x33;
 
-    mem[0x0043] = 0x32;
+    mem[0x4246] = CPU::INS_JSR;
+    mem[0x4247] = 0x44;
+    mem[0x4248] = 0x44;
 
-    cpu.Execute(12, mem);
+    mem[0x4444] = CPU::INS_LDX_IM;
+    mem[0x4445] = 0x02;
+
+    mem[0x4446] = CPU::INS_STR_AZPX;
+    mem[0x4447] = 0x33;
+    mem[0x0035] = 0x12;
+
+    /*mem[0xFFFC] = CPU::INS_JMP_INR;*/
+    /*mem[0xFFFD] = 0x34;*/
+    /*mem[0xFFFE] = 0x00;*/
+    /*mem[0x0034] = 0x12;*/
+    /*mem[0x0035] = 0x00;*/
+    /**/
+    /*mem[0x0012] = CPU::INS_JMP_ABS;*/
+    /*mem[0x0013] = 0x0044;*/
+    /*mem[0x0014] = 0x0000;*/
+    /**/
+    /*mem[0x0044] = CPU::INS_STR_AZP;*/
+    /*mem[0x0045] = 0x47;*/
+    /*mem[0x0047] = 0x32;*/
+
+    cpu.Execute(11+6+2+4, mem);
 
     return 0;
 }
