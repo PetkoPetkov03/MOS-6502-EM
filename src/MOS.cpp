@@ -31,7 +31,8 @@ struct Mem
     }
 
     // write 1 byte
-    Byte& operator[](u32 Address) {
+    Byte& operator[](u32 Address) 
+    {
         assert(Address < MAX_MEM);
         return Data[Address];
     }
@@ -146,7 +147,9 @@ struct CPU {
       INS_STR_AZP = 0x85,
       INS_STR_AZPX = 0x95,
       INS_STR_AABS = 0x8D,
-      INS_STR_AABSX = 0x9D;
+      INS_STR_AABSX = 0x9D,
+      INS_STR_XZP = 0x86,
+      INS_STR_XZPY = 0x96;
 
     void SetImmediate(u32& Cycles, Byte& Register, Mem& memory)
     {
@@ -472,6 +475,27 @@ struct CPU {
                     Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
 
                     memory[Value] = ACC;
+                }break;
+
+                case INS_STR_XZP:
+                {
+                    Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+                    Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+                    memory[Value] = RegisterX;
+                }break;
+
+                case INS_STR_XZPY:
+                {
+                    Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+                    ZeroPageAddress += RegisterY;
+                    Cycles--;
+
+                    Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+                    memory[Value] = RegisterX;
                 }break;
 
                 default: 
