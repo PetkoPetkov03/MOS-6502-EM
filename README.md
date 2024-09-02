@@ -8,5 +8,5 @@ Used Dave Poo's CPU emulator series first episode as a starting guide: https://w
 
 ## Dependancies
 ### Debug Linix
-    Valgrind https://valgrind.org/
-    gdb https://man7.org/linux/man-pages/man1/gdb.1.html 
+Valgrind https://valgrind.org/
+gdb https://man7.org/linux/man-pages/man1/gdb.1.html 
