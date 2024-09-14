@@ -1,7 +1,13 @@
 #include <cassert>
+#include <cmath>
+#include <ctime>
 #include <stdlib.h>
 #include <stdio.h>
 #include <cstdint>
+
+#include <time.h>
+#include <unordered_map>
+#include <vector>
 
 // http://www.6502.org/users/obelisk/index.html
 
@@ -9,6 +15,7 @@ using Byte = uint8_t;
 using Word = uint16_t;
 
 using u32 = uint32_t;
+using u8 = uint8_t;
 
 struct Mem 
 {
@@ -148,8 +155,19 @@ struct CPU {
       INS_STR_AZPX = 0x95,
       INS_STR_AABS = 0x8D,
       INS_STR_AABSX = 0x9D,
+      INS_STR_AABSY = 0x99,
       INS_STR_XZP = 0x86,
-      INS_STR_XZPY = 0x96;
+      INS_STR_XZPY = 0x96,
+      INS_STR_XABS = 0x8E,
+      INS_STR_YZP = 0x84,
+      INS_STR_YZPX = 0x94,
+      INS_STR_YABS = 0x8C,
+      INS_TAX = 0xAA,
+      INS_TAY = 0xA8,
+      INS_TSX = 0xBA,
+      INS_TXA = 0x8A,
+      INS_TXS = 0x9A,
+      INS_TYA = 0x98;
 
     void SetImmediate(u32& Cycles, Byte& Register, Mem& memory)
     {
@@ -203,22 +221,10 @@ struct CPU {
         assert(Address <= 0xFF && "Address is out of zero-page range");
     }
 
-    void LDASetStatus()
+    void SetStatusZN(Byte Register)
     {
-        Z = (ACC==0);
-        N = (ACC & (1 << 7)) > 0;
-    }
-
-    void LDXSetStatus()
-    {
-        Z = (RegisterX==0);
-        N = (RegisterX & (1 << 7)) > 0;
-    }
-
-    void LDYSetStatus()
-    {
-        Z = (RegisterY==0);
-        N = (RegisterY & (1 << 7)) > 0;
+        Z = (Register == 0);
+        N = (Register & (1 << 7)) > 0;
     }
 
     void ZeroPageWrapAround(u32& Cycles, Byte& Address)
@@ -241,21 +247,21 @@ struct CPU {
                 case INS_LDA_IM:
                 {
                     SetImmediate(Cycles, ACC, memory);
-                    LDASetStatus();
+                    SetStatusZN(ACC);
                     printf("Imidiate BV: %hhx V: %i Z: %i N: %i\n", ACC, ACC, Z, N);
                 }break;
 
                 case INS_LDA_ZP:
                 {
                     SetZeroPage(Cycles, ACC, memory);
-                    LDASetStatus();
+                    SetStatusZN(ACC);
                     printf("ZeroPageAddress BV: %hhx V: %i Z: %i N: %i\n", ACC, ACC, Z, N);
                 }break;
 
                 case INS_LDA_ZPX:
                 {
                     SetZeroPageByRegister(Cycles, ACC, RegisterX, memory);
-                    LDASetStatus();
+                    SetStatusZN(ACC);
 
                     printf("ZeroPageAddressX  BV: %hhx V: %i Z: %i N: %i X: %hhx \n", ACC, ACC, Z, N, RegisterX);
                 }break;
@@ -264,7 +270,7 @@ struct CPU {
                 {
                     SetAbsolute(Cycles, ACC, memory);
 
-                    LDASetStatus();
+                    SetStatusZN(ACC);
                     printf("LDA ABS ACC: %hhx Z: %i N: %i \n", ACC, Z, N);
                 }break;
 
@@ -272,14 +278,14 @@ struct CPU {
                 {
                     SetAbsoluteByRegister(Cycles, ACC, RegisterX, memory);
 
-                    LDASetStatus();
+                    SetStatusZN(ACC);
                 }break;
 
                 case INS_LDA_ABSY:
                 {
                     SetAbsoluteByRegister(Cycles, ACC, RegisterY, memory);
 
-                    LDASetStatus();
+                    SetStatusZN(ACC);
                 }break;
 
                 case INS_LDA_INRX:
@@ -294,8 +300,8 @@ struct CPU {
                     Word EffectiveAddress = ReadWord(Cycles, ZeroPageAddress, memory);
 
                     ACC = ReadByte(Cycles, EffectiveAddress, memory);
-                    LDASetStatus();
-
+                    
+                    SetStatusZN(ACC);
                 }break;
 
                 case INS_LDA_INRY:
@@ -318,7 +324,7 @@ struct CPU {
                         Cycles--;
                     }
 
-                    LDASetStatus();
+                    SetStatusZN(ACC);
                 }break;
 
                 case INS_JSR:
@@ -356,8 +362,7 @@ struct CPU {
                 {
                     SetImmediate(Cycles, RegisterX, memory);
 
-                    LDXSetStatus();
-
+                    SetStatusZN(RegisterX);
                     printf("Load X Imidiate BV: %hhx, V: %x Z: %i N: %i X: %hhx \n", RegisterX, RegisterX, Z, N , RegisterX);
                 }break;
 
@@ -365,7 +370,7 @@ struct CPU {
                 {
                     SetZeroPage(Cycles, RegisterX, memory);
 
-                    LDXSetStatus();
+                    SetStatusZN(RegisterX);
                     printf("Load X ZP BV: %hhx, V: %x Z: %i N: %i  \n", RegisterX, RegisterX, Z, N);
 
                 }break;
@@ -373,14 +378,14 @@ struct CPU {
                 case INS_LDX_ZPY:
                 {
                     SetZeroPageByRegister(Cycles, RegisterX, RegisterY, memory);
-                    LDXSetStatus();
+                    SetStatusZN(RegisterX);
                 }break;
 
                 case INS_LDX_ABS:
                 {
                     SetAbsolute(Cycles, RegisterX, memory);
 
-                    LDXSetStatus();
+                    SetStatusZN(RegisterX);
                     printf("Load X ABS X: %hhx, V: %x Z: %i N: %i Y: %hhx \n", RegisterX, RegisterX, Z, N , RegisterY);
 
                 }break;
@@ -389,7 +394,7 @@ struct CPU {
                 {
                     SetAbsoluteByRegister(Cycles, RegisterX, RegisterY, memory);
                       
-                    LDXSetStatus();
+                    SetStatusZN(RegisterX);
                     printf("Load X ABS X: %hhx, V: %x Z: %i N: %i Y: %hhx \n", RegisterX, RegisterX, Z, N , RegisterY);
 
                 }break;
@@ -398,7 +403,7 @@ struct CPU {
                 {
                     SetImmediate(Cycles, RegisterY, memory);
 
-                    LDYSetStatus();
+                    SetStatusZN(RegisterY);
 
                     printf("Load Y IM Y: %hhx, V: %x Z: %i N: %i \n", RegisterY, RegisterY, Z, N);
 
@@ -407,27 +412,27 @@ struct CPU {
                 case INS_LDY_ZP:
                 {
                     SetZeroPage(Cycles, RegisterY, memory);
-                    LDYSetStatus();
+                    SetStatusZN(RegisterY);
                 }break;
 
                 case INS_LDY_ZPX:
                 {
                     SetZeroPageByRegister(Cycles, RegisterY, RegisterX, memory);
-                    LDYSetStatus();
+                    SetStatusZN(RegisterY);
                 }break;
 
                 case INS_LDY_ABS:
                 {
                     SetAbsolute(Cycles, RegisterY, memory);
 
-                    LDYSetStatus();
+                    SetStatusZN(RegisterY);
                 }break;
 
                 case INS_LDY_ABSX:
                 {
                     SetAbsoluteByRegister(Cycles, RegisterY, RegisterX, memory);
 
-                    LDYSetStatus();
+                    SetStatusZN(RegisterY);
                 }break;
 
                 case INS_STR_AZP:
@@ -480,6 +485,7 @@ struct CPU {
                 case INS_STR_XZP:
                 {
                     Byte ZeroPageAddress = Fetch(Cycles, memory);
+                    CheckZPOverflow(ZeroPageAddress);
 
                     Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
 
@@ -498,6 +504,97 @@ struct CPU {
                     memory[Value] = RegisterX;
                 }break;
 
+                case INS_STR_XABS:
+                {
+                    Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+                    Word EffectiveAddress = ReadWord(Cycles, AbsoluteAddress, memory);
+
+                    memory[EffectiveAddress] = RegisterX;
+                }break;
+
+                case INS_STR_YZP:
+                {
+                    Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+                    CheckZPOverflow(ZeroPageAddress);
+
+                    Byte EffectiveAddress = ReadByte(Cycles, ZeroPageAddress, memory);
+
+                    memory[EffectiveAddress] = RegisterY;
+                }break;
+
+
+                case INS_STR_YZPX:
+                {
+                    Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+                    ZeroPageAddress += RegisterX;
+                    Cycles--;
+
+                    Byte EffectiveAddress = ReadByte(Cycles, ZeroPageAddress, memory);
+
+                    memory[EffectiveAddress] = RegisterY;
+                }break;
+
+                case INS_STR_YABS:
+                {
+                    Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+                    Word EffectiveAddress = ReadWord(Cycles, AbsoluteAddress, memory);
+
+                    memory[EffectiveAddress] = RegisterY;
+                }break;
+
+                case INS_TAX:
+                {
+                    RegisterX = ACC;
+                    Cycles--;
+
+                    SetStatusZN(RegisterX);
+                }break;
+
+                case INS_TAY:
+                {
+                    RegisterY = ACC;
+                    Cycles--;
+
+                    SetStatusZN(RegisterY);
+                }break;
+
+                case INS_TSX:
+                {
+                  RegisterX = SP;
+                  Cycles--;
+
+                  SetStatusZN(RegisterX);
+                }break;
+
+                case INS_TXA:
+                {
+                    ACC = RegisterX;
+                    Cycles--;
+
+                    SetStatusZN(ACC);
+                }break;
+
+                case INS_TXS:
+                {
+                    SP = RegisterX;
+                    Cycles--;
+
+                    SetStatusZN(SP);
+
+                }break;
+
+                case INS_TYA:
+                {
+                   ACC = RegisterY;
+                   Cycles--;
+
+                   SetStatusZN(ACC);
+                }break;
+
                 default: 
                 {
                     printf("Instruction not found %hhx \n", Instruction);
@@ -508,11 +605,141 @@ struct CPU {
     }
 };
 
+u32 LoadCycles(Mem& memory, std::unordered_map<Byte, u8> I2CMap, std::unordered_map<Byte, u8> I2PCMap, Word start_address)
+{
+   u32 total_cycles = 0;
+   Word pc = start_address;
+
+   while(true) {
+      Byte opcode = memory[pc];
+      if(I2CMap.find(opcode) != I2CMap.end()) {
+        total_cycles += I2CMap[opcode];
+
+        switch (opcode) {
+            case CPU::INS_JSR:
+            {
+                Word return_address = pc + I2PCMap[opcode];
+
+                pc = memory[pc+1] | (memory[pc+2] << 8);
+                continue;
+            }break;
+                   
+            case CPU::INS_JMP_ABS:
+            {
+                pc = memory[pc + 1] | (memory[pc+2] << 8);
+                continue;
+            }break;
+
+            case CPU::INS_JMP_INR:
+            {
+                Word pointer = memory[pc + 1] | (memory[pc+2] << 8);
+
+                pc = memory[pointer] | (memory[pointer + 1] << 8);
+                continue;
+            }break;
+
+            default:
+            {
+                pc += I2PCMap[opcode];
+            }break;
+        }
+      }else {
+        printf("LoadCycles compleate!\n");
+        break;
+      }
+   }
+
+   return total_cycles;
+}
+
 int main()
 {
+    clock_t start = clock();
     Mem mem;
     CPU cpu;
     cpu.Reset(mem);
+
+    std::unordered_map<Byte, u8> I2CMap = {
+      {CPU::INS_LDA_IM, 2},
+      {CPU::INS_LDA_ZP, 3},
+      {CPU::INS_LDA_ZPX, 4},
+      {CPU::INS_LDA_ABS, 4},
+      {CPU::INS_LDA_ABSX, 4},
+      {CPU::INS_LDA_ABSY, 4},
+      {CPU::INS_LDA_INRX, 6},
+      {CPU::INS_LDA_INRY, 5},
+      {CPU::INS_LDX_IM, 2},
+      {CPU::INS_LDX_ZP, 3},
+      {CPU::INS_LDX_ZPY, 4},
+      {CPU::INS_LDX_ABS, 4},
+      {CPU::INS_LDX_ABSY, 4},
+      {CPU::INS_LDY_IM, 2},
+      {CPU::INS_LDY_ZP, 3},
+      {CPU::INS_LDY_ZPX, 4},
+      {CPU::INS_LDY_ABS, 4},
+      {CPU::INS_LDY_ABSX, 4},
+      {CPU::INS_STR_AZP, 3},
+      {CPU::INS_STR_AZPX, 4},
+      {CPU::INS_STR_AABS, 4},
+      {CPU::INS_STR_AABSX, 5},
+      {CPU::INS_STR_AABSY, 5},
+      {CPU::INS_STR_XZP, 3},
+      {CPU::INS_STR_XZPY, 4},
+      {CPU::INS_STR_XABS, 4},
+      {CPU::INS_STR_YZP, 3},
+      {CPU::INS_STR_YZPX, 4},
+      {CPU::INS_STR_YABS, 4},
+      {CPU::INS_TAX, 2},
+      {CPU::INS_TAY, 2},
+      {CPU::INS_TSX, 2},
+      {CPU::INS_TXA, 2},
+      {CPU::INS_TXS, 2},
+      {CPU::INS_TYA, 2},
+      {CPU::INS_JSR, 6},
+      {CPU::INS_JMP_ABS, 3},
+      {CPU::INS_JMP_INR, 5},
+    };
+
+    std::unordered_map<Byte, u8> I2PCMap = {
+      {CPU::INS_LDA_IM, 2},
+      {CPU::INS_LDA_ZP, 2},
+      {CPU::INS_LDA_ZPX, 2},
+      {CPU::INS_LDA_ABS, 3},
+      {CPU::INS_LDA_ABSX, 3},
+      {CPU::INS_LDA_ABSY, 3},
+      {CPU::INS_LDA_INRX, 2},
+      {CPU::INS_LDA_INRY, 2},
+      {CPU::INS_LDX_IM, 2},
+      {CPU::INS_LDX_ZP, 2},
+      {CPU::INS_LDX_ZPY, 2},
+      {CPU::INS_LDX_ABS, 3},
+      {CPU::INS_LDX_ABSY, 3},
+      {CPU::INS_LDY_IM, 2},
+      {CPU::INS_LDY_ZP, 2},
+      {CPU::INS_LDY_ZPX, 2},
+      {CPU::INS_LDY_ABS, 3},
+      {CPU::INS_LDY_ABSX, 3},
+      {CPU::INS_STR_AZP, 2},
+      {CPU::INS_STR_AZPX, 2},
+      {CPU::INS_STR_AABS, 3},
+      {CPU::INS_STR_AABSX, 3},
+      {CPU::INS_STR_AABSY, 3},
+      {CPU::INS_STR_XZP, 2},
+      {CPU::INS_STR_XZPY, 2},
+      {CPU::INS_STR_XABS, 3},
+      {CPU::INS_STR_YZP, 2},
+      {CPU::INS_STR_YZPX, 2},
+      {CPU::INS_STR_YABS, 3},
+      {CPU::INS_TAX, 1},
+      {CPU::INS_TAY, 1},
+      {CPU::INS_TSX, 1},
+      {CPU::INS_TXA, 1},
+      {CPU::INS_TXS, 1},
+      {CPU::INS_TYA, 1},
+      {CPU::INS_JSR, 3},
+      {CPU::INS_JMP_ABS, 3},
+      {CPU::INS_JMP_INR, 3},
+    };
 
     // JSR
     /*mem[0xFFFC] = CPU::INS_JSR;*/
@@ -533,20 +760,21 @@ int main()
     mem[0x4242] = CPU::INS_LDA_IM;
     mem[0x4243] = 0x32;
 
-    mem[0x4244] = CPU::INS_STR_AZP;
-    mem[0x4245] = 0x44;
-    mem[0x0044] = 0x33;
+    mem[0x4244] = CPU::INS_STR_AZPX;
+    mem[0x4245] = 0x00;
+    mem[0x4246] = 0x13;
 
-    mem[0x4246] = CPU::INS_JSR;
-    mem[0x4247] = 0x44;
-    mem[0x4248] = 0x44;
 
-    mem[0x4444] = CPU::INS_LDX_IM;
-    mem[0x4445] = 0x02;
+    /*mem[0x4246] = CPU::INS_JSR;*/
+    /*mem[0x4247] = 0x44;*/
+    /*mem[0x4248] = 0x44;*/
 
-    mem[0x4446] = CPU::INS_STR_AZPX;
-    mem[0x4447] = 0x33;
-    mem[0x0035] = 0x12;
+    /*mem[0x4444] = CPU::INS_LDX_IM;*/
+    /*mem[0x4445] = 0x02;*/
+    /**/
+    /*mem[0x4446] = CPU::INS_STR_AZPX;*/
+    /*mem[0x4447] = 0x33;*/
+    /*mem[0x0035] = 0x12;*/
 
     /*mem[0xFFFC] = CPU::INS_JMP_INR;*/
     /*mem[0xFFFD] = 0x34;*/
@@ -562,7 +790,15 @@ int main()
     /*mem[0x0045] = 0x47;*/
     /*mem[0x0047] = 0x32;*/
 
-    cpu.Execute(11+6+2+4, mem);
+    u32 Cycles = LoadCycles(mem, I2CMap, I2PCMap, 0xFFFC);
+
+    cpu.Execute(Cycles, mem);
+
+    clock_t end = clock();
+
+    double elapsed_time = double(end - start) / CLOCKS_PER_SEC;
+    
+    printf("Elapsed time: %i nanoseconds \n", int(elapsed_time*1e9));
 
     return 0;
 }

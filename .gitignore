@@ -1,3 +1,7 @@
 dist/
 MOS.ll
 MOS.s
+cmake_install.cmake
+CMakeCache.txt
+Makefile
+CMakeFiles/
