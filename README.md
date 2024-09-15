@@ -9,15 +9,21 @@ Used Dave Poo's CPU emulator series first episode as a starting guide: https://w
 ## Build 
 ### Windows
 ```
-    
+cmake -G "version of Visual Studio" .
 ```
+examples of Visual Studio versions
+Visual Studio 17 2022
+Visual Studio 16 2019
+
+build with visual studio
+
 
 ### Linux
 ```
-    cmake .
-    make
+cmake .
+make
 
-    ./dist/MOS
+./dist/MOS
 ```
 
 ## Dependancies
