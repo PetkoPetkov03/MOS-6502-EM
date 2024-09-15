@@ -80,6 +80,12 @@ struct CPU {
         return Data;
     }
 
+    void PushByte(Byte value, u32& Cycles, Mem& memory) {
+        memory[0x0100 + SP] = value;
+        SP--;
+        Cycles-=2;
+    }
+
     static constexpr Byte 
       INS_LDA_IM = 0xA9, 
       INS_LDA_ZP = 0xA5,
@@ -118,7 +124,9 @@ struct CPU {
       INS_TSX = 0xBA,
       INS_TXA = 0x8A,
       INS_TXS = 0x9A,
-      INS_TYA = 0x98;
+      INS_TYA = 0x98,
+      INS_PHA = 0x48,
+      INS_PHP = 0x08;
 
     void SetImmediate(u32& Cycles, Byte& Register, Mem& memory)
     {
@@ -195,6 +203,19 @@ struct CPU {
 
             switch (Instruction)
             {
+                case INS_PHA:
+                {
+                    PushByte(ACC, Cycles, memory);
+                    printf("ACC Pushed on stack\n");
+                }break;
+
+                case INS_PHP:
+                {
+                    Byte sf = (Z << 7) | (O << 6) | (1 << 5) | (B << 4) | (D << 3) | (I << 2) | (Z << 1) | C;
+
+                    PushByte(sf, Cycles, memory);
+                }break;
+
                 case INS_LDA_IM:
                 {
                     SetImmediate(Cycles, ACC, memory);

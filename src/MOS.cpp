@@ -14,7 +14,6 @@
 
 int main()
 {
-    clock_t start = clock();
     Mem mem;
     CPU cpu;
     cpu.Reset(mem);
@@ -58,6 +57,7 @@ int main()
       {CPU::INS_JSR, 6},
       {CPU::INS_JMP_ABS, 3},
       {CPU::INS_JMP_INR, 5},
+      {CPU::INS_PHA, 3}
     };
 
     std::unordered_map<Byte, u8> I2PCMap = {
@@ -99,6 +99,7 @@ int main()
       {CPU::INS_JSR, 3},
       {CPU::INS_JMP_ABS, 3},
       {CPU::INS_JMP_INR, 3},
+      {CPU::INS_PHA, 1}
     };
 
     // JSR
@@ -121,8 +122,11 @@ int main()
     mem[0x4243] = 0x32;
 
     mem[0x4244] = CPU::INS_STR_AZPX;
-    mem[0x4245] = 0x00;
-    mem[0x4246] = 0x13;
+    mem[0x4245] = 0x13;
+    /*mem[0x4244] = CPU::INS_LDA_IM;*/
+    /*mem[0x4245] = 0x03;*/
+    
+    mem[0x4246] = CPU::INS_PHA;
 
 
     /*mem[0x4246] = CPU::INS_JSR;*/
@@ -152,6 +156,7 @@ int main()
 
     u32 Cycles = LoadCycles(mem, I2CMap, I2PCMap, 0xFFFC);
 
+    clock_t start = clock();
     cpu.Execute(Cycles, mem);
 
     clock_t end = clock();
