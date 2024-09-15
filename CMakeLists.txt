@@ -6,15 +6,14 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(SOURCE_FILE src/MOS.cpp)
+set(CPU_FILE src/cpu/cpu.cpp)
 
 set(OUTPUT_DIR "${CMAKE_BINARY_DIR}/dist")
 
-add_executable(MOS ${SOURCE_FILE})
+add_executable(MOS ${CPU_FILE} ${SOURCE_FILE})
 
 set_target_properties(MOS PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR})
 
 if(NOT EXISTS ${OUTPUT_DIR})
     file(MAKE_DIRECTORY ${OUTPUT_DIR})
 endif()
-
-target_link_libraries(MOS stdc++)
