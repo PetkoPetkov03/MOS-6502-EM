@@ -57,7 +57,10 @@ int main()
       {CPU::INS_JSR, 6},
       {CPU::INS_JMP_ABS, 3},
       {CPU::INS_JMP_INR, 5},
-      {CPU::INS_PHA, 3}
+      {CPU::INS_PHA, 3},
+      {CPU::INS_PHP, 3},
+      {CPU::INS_PLA, 4},
+      {CPU::INS_PLP, 4},
     };
 
     std::unordered_map<Byte, u8> I2PCMap = {
@@ -99,7 +102,10 @@ int main()
       {CPU::INS_JSR, 3},
       {CPU::INS_JMP_ABS, 3},
       {CPU::INS_JMP_INR, 3},
-      {CPU::INS_PHA, 1}
+      {CPU::INS_PHA, 1},
+      {CPU::INS_PHP, 1},
+      {CPU::INS_PLA, 1},
+      {CPU::INS_PLP, 1},
     };
 
     // JSR
@@ -114,19 +120,24 @@ int main()
     /*mem[0xFFFD] = 0x43;*/
     /*mem[0x0043] = 0xFF;*/
 
-    mem[0xFFFC] = CPU::INS_JSR;
-    mem[0xFFFD] = 0x42;
-    mem[0xFFFE] = 0x42;
+    /*mem[0xFFFC] = CPU::INS_JSR;*/
+    /*mem[0xFFFD] = 0x42;*/
+    /*mem[0xFFFE] = 0x42;*/
 
-    mem[0x4242] = CPU::INS_LDA_IM;
-    mem[0x4243] = 0x32;
+    /*mem[0x4242] = CPU::INS_LDA_IM;*/
+    /*mem[0x4243] = 0x12;*/
 
-    mem[0x4244] = CPU::INS_STR_AZPX;
-    mem[0x4245] = 0x13;
+    /*mem[0x4244] = CPU::INS_STR_AZPX;*/
+    /*mem[0x4245] = 0x13;*/
     /*mem[0x4244] = CPU::INS_LDA_IM;*/
     /*mem[0x4245] = 0x03;*/
     
-    mem[0x4246] = CPU::INS_PHA;
+    /*mem[0x4246] = CPU::INS_PHA;*/
+
+    /*mem[0x4247] = CPU::INS_PLA;*/
+
+
+    /*mem[0x4249] = CPU::INS_PLA;*/
 
 
     /*mem[0x4246] = CPU::INS_JSR;*/
@@ -153,6 +164,18 @@ int main()
     /*mem[0x0044] = CPU::INS_STR_AZP;*/
     /*mem[0x0045] = 0x47;*/
     /*mem[0x0047] = 0x32;*/
+
+    mem[0x4242] = CPU::INS_LDA_ZP;
+    mem[0x4243] = 0x42;
+    mem[0x0042] = 0x00;
+
+    mem[0xFFFC] = CPU::INS_JSR;
+    mem[0xFFFD] = 0x42;
+    mem[0xFFFE] = 0x42;
+
+    mem[0x4244] = CPU::INS_PHP;
+
+    mem[0x4245] = CPU::INS_PLP;
 
     u32 Cycles = LoadCycles(mem, I2CMap, I2PCMap, 0xFFFC);
 

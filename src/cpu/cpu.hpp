@@ -80,11 +80,22 @@ struct CPU {
         return Data;
     }
 
-    void PushByte(Byte value, u32& Cycles, Mem& memory) {
+    void PushByte(Byte value, u32& Cycles, Mem& memory)
+    {
         memory[0x0100 + SP] = value;
         SP--;
-        Cycles-=2;
+        Cycles -= 2;
     }
+
+    Byte PullByte(u32& Cycles, Mem& memory)
+    {
+        SP++;
+        Byte value = memory[0x0100 + SP];
+
+        Cycles -= 2;
+        return value;
+    }
+
 
     static constexpr Byte 
       INS_LDA_IM = 0xA9, 
@@ -126,7 +137,9 @@ struct CPU {
       INS_TXS = 0x9A,
       INS_TYA = 0x98,
       INS_PHA = 0x48,
-      INS_PHP = 0x08;
+      INS_PHP = 0x08,
+      INS_PLA = 0x68,
+      INS_PLP = 0x28;
 
     void SetImmediate(u32& Cycles, Byte& Register, Mem& memory)
     {
@@ -193,6 +206,19 @@ struct CPU {
         Cycles--;
     }
 
+    void LoadFlags(u32& Cycles, Byte Flags)
+    {
+        Z = Flags >> 7;
+        O = Flags >> 6;
+        B = Flags >> 4;
+        D = Flags >> 3;
+        I = Flags >> 2;
+        Z = Flags >> 1;
+        C = Flags;
+
+        Cycles--;
+    }
+
     void Execute( u32 Cycles, Mem& memory )
     {
         while (Cycles > 0)
@@ -214,6 +240,27 @@ struct CPU {
                     Byte sf = (Z << 7) | (O << 6) | (1 << 5) | (B << 4) | (D << 3) | (I << 2) | (Z << 1) | C;
 
                     PushByte(sf, Cycles, memory);
+
+                    printf("Flags Pushed on stack %hhx \n", sf);
+                }break;
+
+                case INS_PLA:
+                {
+                    Byte Value = PullByte(Cycles, memory);
+                    ACC = Value;
+                    Cycles--;
+
+                    SetStatusZN(ACC);
+                    printf("Pull Acc %hhx\n", Value);
+                }
+
+                case INS_PLP:
+                {
+                    Byte Flags = PullByte(Cycles, memory);
+                    
+                    LoadFlags(Cycles, Flags);
+
+                    printf("Z %i N %i O %i B %i D %i I %i Z %i C %i\n", Z, N, O, B, D, I, Z, C);
                 }break;
 
                 case INS_LDA_IM:
