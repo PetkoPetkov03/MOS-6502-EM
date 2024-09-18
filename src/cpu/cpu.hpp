@@ -139,7 +139,15 @@ struct CPU {
       INS_PHA = 0x48,
       INS_PHP = 0x08,
       INS_PLA = 0x68,
-      INS_PLP = 0x28;
+      INS_PLP = 0x28,
+      INS_AND_IM = 0x29,
+      INS_AND_ZP = 0x25,
+      INS_AND_ZPX = 0x35,
+      INS_AND_ABS = 0x2D,
+      INS_AND_ABSX = 0x3D,
+      INS_AND_ABSY = 0x39,
+      INS_AND_INRX = 0x21,
+      INS_AND_INRY = 0x31;
 
     void SetImmediate(u32& Cycles, Byte& Register, Mem& memory)
     {
@@ -612,6 +620,108 @@ struct CPU {
                    Cycles--;
 
                    SetStatusZN(ACC);
+                }break;
+                
+                
+                case INS_AND_IM:
+                {
+                    Byte Value = Fetch(Cycles, memory);
+
+                    ACC &= Value;
+
+                    SetStatusZN(ACC);
+                }break;
+
+                case INS_AND_ZP:
+                {
+                    Byte ZeroPageAddress = Fetch(Cycles, memory);
+                    Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+                    ACC &= Value;
+
+                    SetStatusZN(ACC);
+                }break;
+
+                case INS_AND_ZPX:
+                {
+                    Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+                    ZeroPageAddress += RegisterX;
+
+                    Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+                    ACC &= Value;
+
+                    SetStatusZN(ACC);
+                }break;
+
+                case INS_AND_ABS:
+                {
+                    Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+                    Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+                    ACC &= Value;
+
+                    SetStatusZN(ACC);
+                }break;
+
+                case INS_AND_ABSX:
+                {
+                    Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+                    AbsoluteAddress += RegisterX;
+
+                    Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+                    ACC &= Value;
+
+                    // CheckZPOverflow
+
+                    SetStatusZN(ACC);
+                }break;
+
+                case INS_AND_ABSY:
+                {
+                    Word AbsoluteAddress = FetchWord(Cycles, memory);
+                    
+                    AbsoluteAddress += RegisterY;
+
+                    Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+                    ACC &= Value;
+
+                    SetStatusZN(ACC);
+                }break;
+
+                case INS_AND_INRX:
+                {
+                   Word SubAddr = FetchWord(Cycles, memory);
+
+                   Word DirectAddress = ReadWord(Cycles, SubAddr, memory);
+
+                   DirectAddress += RegisterX;
+
+                   Byte Value = ReadByte(Cycles, DirectAddress, memory);
+
+                   ACC &= Value;
+
+                   SetStatusZN(ACC);
+                }break;
+
+                case INS_AND_INRY:
+                {
+                    Word SubAddr = FetchWord(Cycles, memory);
+
+                    Word DirectAddress = ReadWord(Cycles, SubAddr, memory);
+
+                    DirectAddress += RegisterY;
+
+                    Byte Value = ReadByte(Cycles, DirectAddress, memory);
+
+                    ACC &= Value;
+
+                    SetStatusZN(ACC);
                 }break;
 
                 default: 

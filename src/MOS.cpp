@@ -61,6 +61,14 @@ int main()
       {CPU::INS_PHP, 3},
       {CPU::INS_PLA, 4},
       {CPU::INS_PLP, 4},
+      {CPU::INS_AND_IM, 2},
+      {CPU::INS_AND_ZP, 3},
+      {CPU::INS_AND_ZPX, 4},
+      {CPU::INS_AND_ABS, 4},
+      {CPU::INS_AND_ABSX, 4},
+      {CPU::INS_AND_ABSY, 4},
+      {CPU::INS_AND_INRX, 6},
+      {CPU::INS_AND_INRY, 5}
     };
 
     std::unordered_map<Byte, u8> I2PCMap = {
@@ -106,6 +114,14 @@ int main()
       {CPU::INS_PHP, 1},
       {CPU::INS_PLA, 1},
       {CPU::INS_PLP, 1},
+      {CPU::INS_AND_IM, 2},
+      {CPU::INS_AND_ZP, 2},
+      {CPU::INS_AND_ZPX, 2},
+      {CPU::INS_AND_ABS, 3},
+      {CPU::INS_AND_ABSX, 3},
+      {CPU::INS_AND_ABSY, 3},
+      {CPU::INS_AND_INRX, 2},
+      {CPU::INS_AND_INRY, 2}
     };
 
     // JSR
@@ -167,7 +183,7 @@ int main()
 
     mem[0x4242] = CPU::INS_LDA_ZP;
     mem[0x4243] = 0x42;
-    mem[0x0042] = 0x00;
+    mem[0x0042] = 0x99;
 
     mem[0xFFFC] = CPU::INS_JSR;
     mem[0xFFFD] = 0x42;
