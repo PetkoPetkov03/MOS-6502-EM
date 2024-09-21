@@ -58,7 +58,11 @@ struct CPU {
                         INS_AND_ZP = 0x25, INS_AND_ZPX = 0x35,
                         INS_AND_ABS = 0x2D, INS_AND_ABSX = 0x3D,
                         INS_AND_ABSY = 0x39, INS_AND_INRX = 0x21,
-                        INS_AND_INRY = 0x31;
+                        INS_AND_INRY = 0x31, INS_EOR_IM = 0x49,
+                        INS_EOR_ZP = 0x45, INS_EOR_ZPX = 0x55,
+                        INS_EOR_ABS = 0x4D, INS_EOR_ABSX = 0x5D,
+                        INS_EOR_ABSY = 0x59, INS_EOR_INRX = 0x41,
+                        INS_EOR_INRY = 0x51, INS_NOP = 0xEA;
 
   void SetImmediate(u32 &Cycles, Byte &Register, Mem &memory);
 

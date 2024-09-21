@@ -2,6 +2,7 @@
 #include "../memory/memory.hpp"
 #include "../types/types.hpp"
 #include <stdio.h>
+#include <system_error>
 #include <unordered_map>
 
 void CPU::Reset(Mem &memory) {
@@ -82,7 +83,7 @@ void CPU::SetZeroPage(u32 &Cycles, Byte &Register, Mem &memory) {
 }
 
 void CPU::SetZeroPageByRegister(u32 &Cycles, Byte &Register, Byte IncRegister,
-                           Mem &memory) {
+                                Mem &memory) {
   Byte ZeroPageAddress = Fetch(Cycles, memory);
 
   ZeroPageAddress += IncRegister;
@@ -99,7 +100,7 @@ void CPU::SetAbsolute(u32 &Cycles, Byte &Register, Mem &memory) {
 }
 
 void CPU::SetAbsoluteByRegister(u32 &Cycles, Byte &Register, Byte IncRegister,
-                           Mem &memory) {
+                                Mem &memory) {
   Word AbsoluteAddress = FetchWord(Cycles, memory);
   Word EffectiveAddress = AbsoluteAddress + IncRegister;
 
@@ -588,6 +589,106 @@ void CPU::Execute(u32 Cycles, Mem &memory) {
       ACC &= Value;
 
       SetStatusZN(ACC);
+    } break;
+
+    case INS_EOR_IM: {
+      Byte Value = Fetch(Cycles, memory);
+
+      ACC |= Value;
+
+      SetStatusZN(ACC);
+    } break;
+
+    case INS_EOR_ZP: {
+      Byte Address = Fetch(Cycles, memory);
+
+      Byte Value = ReadByte(Cycles, Address, memory);
+
+      ACC |= Value;
+
+      SetStatusZN(ACC);
+    } break;
+
+    case INS_EOR_ZPX: {
+      Byte Address = Fetch(Cycles, memory);
+
+      Address += RegisterX;
+      Cycles--;
+
+      Byte Value = ReadByte(Cycles, Address, memory);
+
+      ACC |= Value;
+
+      SetStatusZN(ACC);
+    } break;
+
+    case INS_EOR_ABS: {
+      Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+      ACC |= Value;
+
+      SetStatusZN(ACC);
+    } break;
+
+    case INS_EOR_ABSX: {
+      Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+      AbsoluteAddress += RegisterX;
+
+      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+      ACC |= Value;
+
+      CheckZPOverflow(ACC);
+      SetStatusZN(ACC);
+    } break;
+
+    case INS_EOR_ABSY: {
+      Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+      AbsoluteAddress += RegisterY;
+
+      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+      ACC |= Value;
+
+      CheckZPOverflow(ACC);
+      SetStatusZN(ACC);
+    } break;
+
+    case INS_EOR_INRX: {
+      Word Address = FetchWord(Cycles, memory);
+      Address += RegisterX;
+
+      Word DirectAddress = ReadWord(Cycles, Address, memory);
+
+      Byte Value = ReadByte(Cycles, DirectAddress, memory);
+
+      ACC |= Value;
+
+      SetStatusZN(ACC);
+    } break;
+
+    case INS_EOR_INRY: {
+      Word Address = FetchWord(Cycles, memory);
+
+      Address += RegisterY;
+
+      Word DirectAddress = ReadWord(Cycles, Address, memory);
+
+      Byte Value = ReadByte(Cycles, DirectAddress, memory);
+
+      ACC |= Value;
+
+      CheckZPOverflow(ACC);
+      SetStatusZN(ACC);
+    } break;
+
+    case INS_NOP: {
+      Cycles--;
+      printf("No OP\n");
     } break;
 
     default: {

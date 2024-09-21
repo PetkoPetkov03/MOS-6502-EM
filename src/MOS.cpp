@@ -68,7 +68,16 @@ int main()
       {CPU::INS_AND_ABSX, 4},
       {CPU::INS_AND_ABSY, 4},
       {CPU::INS_AND_INRX, 6},
-      {CPU::INS_AND_INRY, 5}
+      {CPU::INS_AND_INRY, 5},
+      {CPU::INS_AND_IM, 2},
+      {CPU::INS_AND_ZP, 3},
+      {CPU::INS_AND_ZPX, 4},
+      {CPU::INS_AND_ABS, 4},
+      {CPU::INS_AND_ABSX, 4},
+      {CPU::INS_AND_ABSY, 4},
+      {CPU::INS_AND_INRX, 6},
+      {CPU::INS_AND_INRY, 5},
+      {CPU::INS_NOP, 2}
     };
 
     std::unordered_map<Byte, u8> I2PCMap = {
@@ -121,7 +130,16 @@ int main()
       {CPU::INS_AND_ABSX, 3},
       {CPU::INS_AND_ABSY, 3},
       {CPU::INS_AND_INRX, 2},
-      {CPU::INS_AND_INRY, 2}
+      {CPU::INS_AND_INRY, 2},
+      {CPU::INS_AND_IM, 2},
+      {CPU::INS_AND_ZP, 2},
+      {CPU::INS_AND_ZPX, 2},
+      {CPU::INS_AND_ABS, 3},
+      {CPU::INS_AND_ABSX, 3},
+      {CPU::INS_AND_ABSY, 3},
+      {CPU::INS_AND_INRX, 2},
+      {CPU::INS_AND_INRY, 2},
+      {CPU::INS_NOP, 1},
     };
 
     // JSR
@@ -192,6 +210,8 @@ int main()
     mem[0x4244] = CPU::INS_PHP;
 
     mem[0x4245] = CPU::INS_PLP;
+
+    mem[0x4246] = CPU::INS_NOP;
 
     u32 Cycles = LoadCycles(mem, I2CMap, I2PCMap, 0xFFFC);
 
