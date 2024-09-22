@@ -8,4 +8,3 @@ using u32 = uint32_t;
 using u8 = uint8_t;
 
 #endif // !MOS_TYPES
-

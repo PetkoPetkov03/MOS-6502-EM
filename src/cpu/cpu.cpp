@@ -2,7 +2,6 @@
 #include "../memory/memory.hpp"
 #include "../types/types.hpp"
 #include <stdio.h>
-#include <system_error>
 #include <unordered_map>
 
 void CPU::Reset(Mem &memory) {
