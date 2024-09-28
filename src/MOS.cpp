@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cmath>
+#include <cstdlib>
 #include <ctime>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,59 +9,23 @@
 
 #include "./cpu/cpu.hpp"
 #include "./memory/memory.hpp"
+#include "types/types.hpp"
+#include "./interface/interface.hpp"
 
 // http://www.6502.org/users/obelisk/index.html
-//
 
 int main() {
   Mem mem;
   CPU cpu;
   cpu.Reset(mem);
 
-  std::unordered_map<Byte, u8> I2CMap = {
-      {CPU::INS_LDA_IM, 2},    {CPU::INS_LDA_ZP, 3},    {CPU::INS_LDA_ZPX, 4},
-      {CPU::INS_LDA_ABS, 4},   {CPU::INS_LDA_ABSX, 4},  {CPU::INS_LDA_ABSY, 4},
-      {CPU::INS_LDA_INRX, 6},  {CPU::INS_LDA_INRY, 5},  {CPU::INS_LDX_IM, 2},
-      {CPU::INS_LDX_ZP, 3},    {CPU::INS_LDX_ZPY, 4},   {CPU::INS_LDX_ABS, 4},
-      {CPU::INS_LDX_ABSY, 4},  {CPU::INS_LDY_IM, 2},    {CPU::INS_LDY_ZP, 3},
-      {CPU::INS_LDY_ZPX, 4},   {CPU::INS_LDY_ABS, 4},   {CPU::INS_LDY_ABSX, 4},
-      {CPU::INS_STR_AZP, 3},   {CPU::INS_STR_AZPX, 4},  {CPU::INS_STR_AABS, 4},
-      {CPU::INS_STR_AABSX, 5}, {CPU::INS_STR_AABSY, 5}, {CPU::INS_STR_XZP, 3},
-      {CPU::INS_STR_XZPY, 4},  {CPU::INS_STR_XABS, 4},  {CPU::INS_STR_YZP, 3},
-      {CPU::INS_STR_YZPX, 4},  {CPU::INS_STR_YABS, 4},  {CPU::INS_TAX, 2},
-      {CPU::INS_TAY, 2},       {CPU::INS_TSX, 2},       {CPU::INS_TXA, 2},
-      {CPU::INS_TXS, 2},       {CPU::INS_TYA, 2},       {CPU::INS_JSR, 6},
-      {CPU::INS_JMP_ABS, 3},   {CPU::INS_JMP_INR, 5},   {CPU::INS_PHA, 3},
-      {CPU::INS_PHP, 3},       {CPU::INS_PLA, 4},       {CPU::INS_PLP, 4},
-      {CPU::INS_AND_IM, 2},    {CPU::INS_AND_ZP, 3},    {CPU::INS_AND_ZPX, 4},
-      {CPU::INS_AND_ABS, 4},   {CPU::INS_AND_ABSX, 4},  {CPU::INS_AND_ABSY, 4},
-      {CPU::INS_AND_INRX, 6},  {CPU::INS_AND_INRY, 5},  {CPU::INS_AND_IM, 2},
-      {CPU::INS_AND_ZP, 3},    {CPU::INS_AND_ZPX, 4},   {CPU::INS_AND_ABS, 4},
-      {CPU::INS_AND_ABSX, 4},  {CPU::INS_AND_ABSY, 4},  {CPU::INS_AND_INRX, 6},
-      {CPU::INS_AND_INRY, 5},  {CPU::INS_NOP, 2}};
+  Interface interface;
 
-  std::unordered_map<Byte, u8> I2PCMap = {
-      {CPU::INS_LDA_IM, 2},    {CPU::INS_LDA_ZP, 2},    {CPU::INS_LDA_ZPX, 2},
-      {CPU::INS_LDA_ABS, 3},   {CPU::INS_LDA_ABSX, 3},  {CPU::INS_LDA_ABSY, 3},
-      {CPU::INS_LDA_INRX, 2},  {CPU::INS_LDA_INRY, 2},  {CPU::INS_LDX_IM, 2},
-      {CPU::INS_LDX_ZP, 2},    {CPU::INS_LDX_ZPY, 2},   {CPU::INS_LDX_ABS, 3},
-      {CPU::INS_LDX_ABSY, 3},  {CPU::INS_LDY_IM, 2},    {CPU::INS_LDY_ZP, 2},
-      {CPU::INS_LDY_ZPX, 2},   {CPU::INS_LDY_ABS, 3},   {CPU::INS_LDY_ABSX, 3},
-      {CPU::INS_STR_AZP, 2},   {CPU::INS_STR_AZPX, 2},  {CPU::INS_STR_AABS, 3},
-      {CPU::INS_STR_AABSX, 3}, {CPU::INS_STR_AABSY, 3}, {CPU::INS_STR_XZP, 2},
-      {CPU::INS_STR_XZPY, 2},  {CPU::INS_STR_XABS, 3},  {CPU::INS_STR_YZP, 2},
-      {CPU::INS_STR_YZPX, 2},  {CPU::INS_STR_YABS, 3},  {CPU::INS_TAX, 1},
-      {CPU::INS_TAY, 1},       {CPU::INS_TSX, 1},       {CPU::INS_TXA, 1},
-      {CPU::INS_TXS, 1},       {CPU::INS_TYA, 1},       {CPU::INS_JSR, 3},
-      {CPU::INS_JMP_ABS, 3},   {CPU::INS_JMP_INR, 3},   {CPU::INS_PHA, 1},
-      {CPU::INS_PHP, 1},       {CPU::INS_PLA, 1},       {CPU::INS_PLP, 1},
-      {CPU::INS_AND_IM, 2},    {CPU::INS_AND_ZP, 2},    {CPU::INS_AND_ZPX, 2},
-      {CPU::INS_AND_ABS, 3},   {CPU::INS_AND_ABSX, 3},  {CPU::INS_AND_ABSY, 3},
-      {CPU::INS_AND_INRX, 2},  {CPU::INS_AND_INRY, 2},  {CPU::INS_AND_IM, 2},
-      {CPU::INS_AND_ZP, 2},    {CPU::INS_AND_ZPX, 2},   {CPU::INS_AND_ABS, 3},
-      {CPU::INS_AND_ABSX, 3},  {CPU::INS_AND_ABSY, 3},  {CPU::INS_AND_INRX, 2},
-      {CPU::INS_AND_INRY, 2},  {CPU::INS_NOP, 1},
-  };
+  interface.InitWindow();
+
+  CycleInfo ci;
+
+  ci.Init(cpu);
 
   // JSR
   /*mem[0xFFFC] = CPU::INS_JSR;*/
@@ -131,16 +96,29 @@ int main() {
 
   mem[0x4246] = CPU::INS_NOP;
 
-  u32 Cycles = LoadCycles(mem, I2CMap, I2PCMap, 0xFFFC);
+  mem[0x4247] = CPU::INS_LDA_IM;
+  mem[0x4248] = 0x05;
+
+
+  mem[0x4249] = CPU::INS_ORA_IM;
+  mem[0x4250] = 0x03;
+
+  u32 Cycles = LoadCycles(mem, ci, 0xFFFC);
 
   clock_t start = clock();
-  cpu.Execute(Cycles, mem);
+  
+  // cpu.Execute(Cycles, mem);
 
   clock_t end = clock();
 
+  interface.EventLoop(cpu, Cycles, mem, ci); 
+
+  printf("ACC: %hxx %i\n", cpu.ACC, cpu.ACC); 
   double elapsed_time = double(end - start) / CLOCKS_PER_SEC;
 
   printf("Elapsed time: %i nanoseconds \n", int(elapsed_time * 1e9));
 
-  return 0;
+  interface.CleanUp();
+
+  return interface.Exit();
 }

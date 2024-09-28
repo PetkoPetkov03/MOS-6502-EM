@@ -62,7 +62,15 @@ struct CPU {
                         INS_EOR_ZP = 0x45, INS_EOR_ZPX = 0x55,
                         INS_EOR_ABS = 0x4D, INS_EOR_ABSX = 0x5D,
                         INS_EOR_ABSY = 0x59, INS_EOR_INRX = 0x41,
-                        INS_EOR_INRY = 0x51, INS_NOP = 0xEA;
+                        INS_EOR_INRY = 0x51, INS_NOP = 0xEA,
+                        INS_ORA_IM = 0x09, INS_ORA_ZP = 0x05,
+                        INS_ORA_ZPX = 0x15, INS_ORA_ABS = 0x0D,
+                        INS_ORA_ABSX = 0x1D, INS_ORA_ABSY = 0x19,
+                        INS_ORA_INRX = 0x01, INS_ORA_INRY = 0x11,
+                        INS_CMP_IM = 0xC9, INS_CMP_ZP = 0xC5,
+                        INS_CMP_ZPX = 0xD5, INS_CMP_ABS = 0xCD,
+                        INS_CMP_ABSX = 0xDD, INS_CMP_ABSY = 0xD9,
+                        INS_CMP_INRX = 0xC1, INS_CMP_INRY = 0xD1;
 
   void SetImmediate(u32 &Cycles, Byte &Register, Mem &memory);
 
@@ -88,6 +96,12 @@ struct CPU {
   void Execute(u32 Cycles, Mem &memory);
 };
 
-u32 LoadCycles(Mem &memory, std::unordered_map<Byte, u8> I2CMap,
-               std::unordered_map<Byte, u8> I2PCMap, Word start_address);
+struct CycleInfo {
+  std::unordered_map<Byte, u8> I2CMap;
+  std::unordered_map<Byte, u8> I2PCMap;
+
+  void Init(CPU& cpu);
+};
+
+u32 LoadCycles(Mem &memory, CycleInfo ci, Word start_address);
 #endif // !MOS_CPU_DEF

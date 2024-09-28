@@ -1,3 +1,3 @@
-gdb "./dist/MOS"
+gdb "./build/dist/MOS"
 
 valgrind --leak-check=full -s "./build/dist/MOS"

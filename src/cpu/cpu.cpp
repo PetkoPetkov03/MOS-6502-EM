@@ -2,12 +2,10 @@
 #include "../memory/memory.hpp"
 #include "../types/types.hpp"
 #include <stdio.h>
-#include <unordered_map>
 
 void CPU::Reset(Mem &memory) {
   PC = 0xFFFC;
   SP = 0x099;
-  D = 0;
   ACC = 0;
 
   C = Z = I = D = B = O = N = 0;
@@ -593,7 +591,7 @@ void CPU::Execute(u32 Cycles, Mem &memory) {
     case INS_EOR_IM: {
       Byte Value = Fetch(Cycles, memory);
 
-      ACC |= Value;
+      ACC ^= Value;
 
       SetStatusZN(ACC);
     } break;
@@ -603,7 +601,7 @@ void CPU::Execute(u32 Cycles, Mem &memory) {
 
       Byte Value = ReadByte(Cycles, Address, memory);
 
-      ACC |= Value;
+      ACC ^= Value;
 
       SetStatusZN(ACC);
     } break;
@@ -616,7 +614,7 @@ void CPU::Execute(u32 Cycles, Mem &memory) {
 
       Byte Value = ReadByte(Cycles, Address, memory);
 
-      ACC |= Value;
+      ACC ^= Value;
 
       SetStatusZN(ACC);
     } break;
@@ -626,7 +624,7 @@ void CPU::Execute(u32 Cycles, Mem &memory) {
 
       Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
 
-      ACC |= Value;
+      ACC ^= Value;
 
       SetStatusZN(ACC);
     } break;
@@ -638,7 +636,7 @@ void CPU::Execute(u32 Cycles, Mem &memory) {
 
       Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
 
-      ACC |= Value;
+      ACC ^= Value;
 
       CheckZPOverflow(ACC);
       SetStatusZN(ACC);
@@ -651,7 +649,7 @@ void CPU::Execute(u32 Cycles, Mem &memory) {
 
       Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
 
-      ACC |= Value;
+      ACC ^= Value;
 
       CheckZPOverflow(ACC);
       SetStatusZN(ACC);
@@ -665,7 +663,7 @@ void CPU::Execute(u32 Cycles, Mem &memory) {
 
       Byte Value = ReadByte(Cycles, DirectAddress, memory);
 
-      ACC |= Value;
+      ACC ^= Value;
 
       SetStatusZN(ACC);
     } break;
@@ -679,10 +677,233 @@ void CPU::Execute(u32 Cycles, Mem &memory) {
 
       Byte Value = ReadByte(Cycles, DirectAddress, memory);
 
-      ACC |= Value;
+      ACC ^= Value;
 
       CheckZPOverflow(ACC);
       SetStatusZN(ACC);
+    } break;
+
+    case INS_ORA_IM: {
+      Byte Value = Fetch(Cycles, memory);
+
+      ACC |= Value;
+
+      SetStatusZN(ACC);
+    } break;
+
+    case INS_ORA_ZP: {
+      Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+      Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+      ACC |= Value;
+
+      SetStatusZN(ACC);
+    } break;
+
+    case INS_ORA_ZPX: {
+      Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+      ZeroPageAddress += RegisterX;
+      Cycles--;
+
+      Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+      ACC |= Value;
+
+      SetStatusZN(ACC);
+    } break;
+
+    case INS_ORA_ABS: {
+      Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+      ACC |= Value;
+
+      SetStatusZN(ACC);
+    } break;
+
+    case INS_ORA_ABSX: {
+      Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+      AbsoluteAddress += RegisterX;
+
+      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+      ACC |= Value;
+
+      SetStatusZN(ACC);
+    } break;
+
+    case INS_ORA_ABSY: {
+      Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+      AbsoluteAddress += RegisterY;
+
+      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+      ACC |= Value;
+
+      SetStatusZN(ACC);
+    } break;
+
+    case INS_ORA_INRX: {
+      Word IndirectAddress = FetchWord(Cycles, memory);
+
+      IndirectAddress += RegisterX;
+
+      Word AbsoluteAddress = ReadWord(Cycles, IndirectAddress, memory);
+
+      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+      ACC |= Value;
+
+      SetStatusZN(ACC);
+    }
+
+    case INS_ORA_INRY: {
+      Word IndirectAddress = FetchWord(Cycles, memory);
+
+      IndirectAddress += RegisterY;
+
+      Word AbsoluteAddress = ReadWord(Cycles, IndirectAddress, memory);
+
+      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+      ACC |= Value;
+
+      SetStatusZN(ACC);
+    }
+
+    case INS_CMP_IM: {
+      Byte Value = Fetch(Cycles, memory);
+      Byte Result = ACC - Value;
+
+      if (Result >= 0) {
+        C = 1;
+        if (Result == 0) {
+          Z = 1;
+        }
+      }
+
+      if ((Result & (1 << 7)) > 0) {
+        N = 1;
+      }
+    } break;
+
+    case INS_CMP_ZP: {
+      Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+      Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+      Byte Result = ACC - Value;
+
+      if (Result >= 0) {
+        C = 1;
+
+        if (Result == 0) {
+          Z = 1;
+        }
+      }
+
+      if ((Result & (1 << 7)) > 0) {
+        N = 1;
+      }
+    } break;
+
+    case INS_CMP_ZPX: {
+      Byte ZeroPageAddress = Fetch(Cycles, memory);
+      ZeroPageAddress += RegisterX;
+
+      Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+      Byte Result = ACC - Value;
+
+      if (Result >= 0) {
+        C = 1;
+
+        if (Result == 0) {
+          Z = 1;
+        }
+      }
+
+      if ((Result & (1 << 7)) > 0) {
+        N = 1;
+      }
+    } break;
+
+    case INS_CMP_ABS: {
+      Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+      Byte Result = ACC - Value;
+
+      if (Result >= 0) {
+        C = 1;
+
+        if (Result == 0) {
+          Z = 1;
+        }
+      }
+
+      if ((Result & (1 << 7)) > 0) {
+        N = 1;
+      }
+    } break;
+
+    case INS_CMP_ABSX: {
+      Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+      AbsoluteAddress += RegisterX;
+
+      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+      Byte Result = ACC - Value;
+
+      if (Result >= 0) {
+        C = 1;
+
+        if (Result == 0) {
+          Z = 1;
+        }
+      }
+
+      if ((Result & (1 << 7)) > 0) {
+        N = 1;
+      }
+    } break;
+
+    case INS_CMP_ABSY: {
+      Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+      AbsoluteAddress += RegisterY;
+
+      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+      Byte Result = ACC - Value;
+
+      C = ACC >= Value;
+      Z = Result == 0;
+      N = Result & (1 << 7);
+
+    } break;
+
+    case INS_CMP_INRX: {
+      Word IndirectAddress = FetchWord(Cycles, memory);
+
+      Word AbsoluteAddress = ReadWord(Cycles, IndirectAddress, memory);
+
+      AbsoluteAddress += RegisterX;
+
+      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+      Byte Result = ACC - Value;
+
+      C = ACC >= Value;
+      Z = Result == 0;
+      N = Result & (1 << 7);
     } break;
 
     case INS_NOP: {
@@ -698,19 +919,72 @@ void CPU::Execute(u32 Cycles, Mem &memory) {
   }
 }
 
-u32 LoadCycles(Mem &memory, std::unordered_map<Byte, u8> I2CMap,
-               std::unordered_map<Byte, u8> I2PCMap, Word start_address) {
+void CycleInfo::Init(CPU& cpu) {
+  I2CMap = {
+      {CPU::INS_LDA_IM, 2},    {CPU::INS_LDA_ZP, 3},    {CPU::INS_LDA_ZPX, 4},
+      {CPU::INS_LDA_ABS, 4},   {CPU::INS_LDA_ABSX, 4},  {CPU::INS_LDA_ABSY, 4},
+      {CPU::INS_LDA_INRX, 6},  {CPU::INS_LDA_INRY, 5},  {CPU::INS_LDX_IM, 2},
+      {CPU::INS_LDX_ZP, 3},    {CPU::INS_LDX_ZPY, 4},   {CPU::INS_LDX_ABS, 4},
+      {CPU::INS_LDX_ABSY, 4},  {CPU::INS_LDY_IM, 2},    {CPU::INS_LDY_ZP, 3},
+      {CPU::INS_LDY_ZPX, 4},   {CPU::INS_LDY_ABS, 4},   {CPU::INS_LDY_ABSX, 4},
+      {CPU::INS_STR_AZP, 3},   {CPU::INS_STR_AZPX, 4},  {CPU::INS_STR_AABS, 4},
+      {CPU::INS_STR_AABSX, 5}, {CPU::INS_STR_AABSY, 5}, {CPU::INS_STR_XZP, 3},
+      {CPU::INS_STR_XZPY, 4},  {CPU::INS_STR_XABS, 4},  {CPU::INS_STR_YZP, 3},
+      {CPU::INS_STR_YZPX, 4},  {CPU::INS_STR_YABS, 4},  {CPU::INS_TAX, 2},
+      {CPU::INS_TAY, 2},       {CPU::INS_TSX, 2},       {CPU::INS_TXA, 2},
+      {CPU::INS_TXS, 2},       {CPU::INS_TYA, 2},       {CPU::INS_JSR, 6},
+      {CPU::INS_JMP_ABS, 3},   {CPU::INS_JMP_INR, 5},   {CPU::INS_PHA, 3},
+      {CPU::INS_PHP, 3},       {CPU::INS_PLA, 4},       {CPU::INS_PLP, 4},
+      {CPU::INS_AND_IM, 2},    {CPU::INS_AND_ZP, 3},    {CPU::INS_AND_ZPX, 4},
+      {CPU::INS_AND_ABS, 4},   {CPU::INS_AND_ABSX, 4},  {CPU::INS_AND_ABSY, 4},
+      {CPU::INS_AND_INRX, 6},  {CPU::INS_AND_INRY, 5},  {CPU::INS_EOR_IM, 2},
+      {CPU::INS_EOR_ZP, 3},    {CPU::INS_EOR_ZPX, 4},   {CPU::INS_EOR_ABS, 4},
+      {CPU::INS_EOR_ABSX, 4},  {CPU::INS_EOR_ABSY, 4},  {CPU::INS_EOR_INRX, 6},
+      {CPU::INS_EOR_INRY, 5},  {CPU::INS_NOP, 2},       {CPU::INS_ORA_IM, 2},
+      {CPU::INS_ORA_ZP, 3},    {CPU::INS_ORA_ZPX, 4},   {CPU::INS_ORA_ABS, 4},
+      {CPU::INS_ORA_ABSX, 4},  {CPU::INS_ORA_ABSY, 4},  {CPU::INS_ORA_INRX, 6},
+      {CPU::INS_ORA_INRY, 5},
+  };
+
+  I2PCMap = {
+      {CPU::INS_LDA_IM, 2},    {CPU::INS_LDA_ZP, 2},    {CPU::INS_LDA_ZPX, 2},
+      {CPU::INS_LDA_ABS, 3},   {CPU::INS_LDA_ABSX, 3},  {CPU::INS_LDA_ABSY, 3},
+      {CPU::INS_LDA_INRX, 2},  {CPU::INS_LDA_INRY, 2},  {CPU::INS_LDX_IM, 2},
+      {CPU::INS_LDX_ZP, 2},    {CPU::INS_LDX_ZPY, 2},   {CPU::INS_LDX_ABS, 3},
+      {CPU::INS_LDX_ABSY, 3},  {CPU::INS_LDY_IM, 2},    {CPU::INS_LDY_ZP, 2},
+      {CPU::INS_LDY_ZPX, 2},   {CPU::INS_LDY_ABS, 3},   {CPU::INS_LDY_ABSX, 3},
+      {CPU::INS_STR_AZP, 2},   {CPU::INS_STR_AZPX, 2},  {CPU::INS_STR_AABS, 3},
+      {CPU::INS_STR_AABSX, 3}, {CPU::INS_STR_AABSY, 3}, {CPU::INS_STR_XZP, 2},
+      {CPU::INS_STR_XZPY, 2},  {CPU::INS_STR_XABS, 3},  {CPU::INS_STR_YZP, 2},
+      {CPU::INS_STR_YZPX, 2},  {CPU::INS_STR_YABS, 3},  {CPU::INS_TAX, 1},
+      {CPU::INS_TAY, 1},       {CPU::INS_TSX, 1},       {CPU::INS_TXA, 1},
+      {CPU::INS_TXS, 1},       {CPU::INS_TYA, 1},       {CPU::INS_JSR, 3},
+      {CPU::INS_JMP_ABS, 3},   {CPU::INS_JMP_INR, 3},   {CPU::INS_PHA, 1},
+      {CPU::INS_PHP, 1},       {CPU::INS_PLA, 1},       {CPU::INS_PLP, 1},
+      {CPU::INS_AND_IM, 2},    {CPU::INS_AND_ZP, 2},    {CPU::INS_AND_ZPX, 2},
+      {CPU::INS_AND_ABS, 3},   {CPU::INS_AND_ABSX, 3},  {CPU::INS_AND_ABSY, 3},
+      {CPU::INS_AND_INRX, 2},  {CPU::INS_AND_INRY, 2},  {CPU::INS_EOR_IM, 2},
+      {CPU::INS_EOR_ZP, 2},    {CPU::INS_EOR_ZPX, 2},   {CPU::INS_EOR_ABS, 3},
+      {CPU::INS_EOR_ABSX, 3},  {CPU::INS_EOR_ABSY, 3},  {CPU::INS_EOR_INRX, 2},
+      {CPU::INS_EOR_INRY, 2},  {CPU::INS_NOP, 1},       {CPU::INS_ORA_IM, 2},
+      {CPU::INS_ORA_ZP, 2},    {CPU::INS_ORA_ZPX, 2},   {CPU::INS_ORA_ABS, 3},
+      {CPU::INS_ORA_ABSX, 3},  {CPU::INS_ORA_ABSY, 3},  {CPU::INS_ORA_INRX, 2},
+      {CPU::INS_ORA_INRY, 2},
+  };
+}
+
+u32 LoadCycles(Mem &memory, CycleInfo ci,  Word start_address) {
   u32 total_cycles = 0;
   Word pc = start_address;
 
   while (true) {
     Byte opcode = memory[pc];
-    if (I2CMap.find(opcode) != I2CMap.end()) {
-      total_cycles += I2CMap[opcode];
+    if (ci.I2CMap.find(opcode) != ci.I2CMap.end()) {
+      total_cycles += ci.I2CMap[opcode];
 
       switch (opcode) {
       case CPU::INS_JSR: {
-        Word return_address = pc + I2PCMap[opcode];
+        Word return_address = pc + ci.I2PCMap[opcode];
 
         pc = memory[pc + 1] | (memory[pc + 2] << 8);
         continue;
@@ -729,7 +1003,7 @@ u32 LoadCycles(Mem &memory, std::unordered_map<Byte, u8> I2CMap,
       } break;
 
       default: {
-        pc += I2PCMap[opcode];
+        pc += ci.I2PCMap[opcode];
       } break;
       }
     } else {
