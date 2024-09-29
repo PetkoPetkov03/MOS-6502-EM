@@ -8,6 +8,12 @@ Used Dave Poo's CPU emulator series first episode as a starting guide: https://w
 
 ## Build 
 ### Windows
+
+# Download executable from:
+https://github.com/PetkoPetkov03/MOS-6502-EM/releases/
+
+
+# DEPRECATED (MIGHT NOT WORK)
 ```
 cmake -G "version of Visual Studio" .
 ```

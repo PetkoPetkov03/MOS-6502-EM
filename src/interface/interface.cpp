@@ -94,17 +94,17 @@ void Interface::EventLoop(CPU &cpu, u32 Cycles, Mem &memory, CycleInfo ci) {
 int Interface::Exit() { return Fl::run(); }
 
 void RunPressed(Fl_Widget *w, void *data) {
-  Interface *interface = static_cast<Interface *>(data);
+  Interface *gui_interface = static_cast<Interface *>(data);
   Fl_Button *btn = (Fl_Button *)w;
-  interface->runPressed = true;
+  gui_interface->runPressed = true;
   btn->label("running");
 }
 
 void ResetPressed(Fl_Widget *w, void *data) {
-  Interface *interface = static_cast<Interface *>(data);
+  Interface *gui_interface = static_cast<Interface *>(data);
   Fl_Button *btn = (Fl_Button *)w;
 
-  interface->resetPressed = true;
+  gui_interface->resetPressed = true;
 }
 
 void Interface::CleanUp() {

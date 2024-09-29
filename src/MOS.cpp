@@ -19,9 +19,9 @@ int main() {
   CPU cpu;
   cpu.Reset(mem);
 
-  Interface interface;
+  Interface GUInterface;
 
-  interface.InitWindow();
+  GUInterface.InitWindow();
 
   CycleInfo ci;
 
@@ -111,14 +111,14 @@ int main() {
 
   clock_t end = clock();
 
-  interface.EventLoop(cpu, Cycles, mem, ci); 
+  GUInterface.EventLoop(cpu, Cycles, mem, ci); 
 
   printf("ACC: %hxx %i\n", cpu.ACC, cpu.ACC); 
   double elapsed_time = double(end - start) / CLOCKS_PER_SEC;
 
   printf("Elapsed time: %i nanoseconds \n", int(elapsed_time * 1e9));
 
-  interface.CleanUp();
+  GUInterface.CleanUp();
 
-  return interface.Exit();
+  return GUInterface.Exit();
 }
