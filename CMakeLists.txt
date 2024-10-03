@@ -23,6 +23,7 @@ FetchContent_MakeAvailable(fltk)
 set(SOURCE_FILE src/MOS.cpp)
 
 set(MEMORY_FILE src/memory/memory.cpp)
+
 set(CPU_FILE src/cpu/cpu.cpp)
 set(INTERFACE_FILE src/interface/interface.cpp)
 
@@ -42,11 +43,21 @@ target_include_directories(interface PRIVATE ${fltk_SOURCE_DIR} ${fltk_BINARY_DI
 
 
 if(MINGW)
-  target_link_libraries(cpu memory)
-  target_link_libraries(interface fltk fltk_gl cpu memory)
-  target_link_libraries(MOS PRIVATE cpu interface)
+    message(STATUS "Building for Windows (MinGW)...")
+
+    # Link CPU and OPIMPL to MEMORY
+    target_link_libraries(cpu PRIVATE memory)
+
+    # Link interface with FLTK and system libraries for MinGW
+    target_link_libraries(interface PRIVATE fltk fltk_gl cpu memory)
+
+    # Add required system libraries for MinGW (Windows)
+    target_link_libraries(interface PRIVATE opengl32 glu32 gdi32)
+
+    # Link MOS executable
+    target_link_libraries(MOS PRIVATE memory cpu interface)
 else()
-  target_link_libraries(MOS PRIVATE memory cpu interface fltk fltk_gl)
+  target_link_libraries(MOS PRIVATE memory cpu interface fltk fltk_gl )
 endif()
 # Output directory
 set(OUTPUT_DIR "${CMAKE_BINARY_DIR}/dist")

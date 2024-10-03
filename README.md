@@ -1,5 +1,10 @@
 # MOS 6502 emulator
 
+# In Development!
+This will be a full fledged MOS-6502 emulator, with 6502 assembly interpreter.
+
+as of currently the emulator has limited functionality and can only run programs hard coded into memory through the source code!
+
 ## Resources
 Documentation: http://www.6502.org/users/obelisk/
 

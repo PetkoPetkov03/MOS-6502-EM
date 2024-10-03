@@ -1,6 +1,10 @@
 #include "./cpu.hpp"
 #include "../memory/memory.hpp"
 #include "../types/types.hpp"
+#include "ci.hpp"
+#include "opimpl.cpp"
+#include "ci.cpp"
+#include "opimpl.h"
 #include <stdio.h>
 
 void CPU::Reset(Mem &memory) {
@@ -29,6 +33,326 @@ Word CPU::FetchWord(u32 &Cycles, Mem &memory) {
   Data |= (Fetch(Cycles, memory) << 8);
 
   return Data;
+}
+
+void CPU::SetSTRZP(u32 &Cycles, Byte Register, Mem &memory) {
+  Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+  Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+  memory[Value] = Register;
+}
+
+void CPU::SetSTRZPRegister(u32 &Cycles, Byte Register, Byte IncRegister,
+                           Mem &memory) {
+  Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+  ZeroPageAddress += IncRegister;
+  Cycles--;
+
+  Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+  memory[Value] = Register;
+}
+
+void CPU::SetSTRABS(u32 &Cycles, Byte Register, Mem &memory) {
+  Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  memory[Value] = Register;
+}
+
+void CPU::SetSTRABSRegister(u32 &Cycles, Byte Register, Byte IncRegister,
+                            Mem &memory) {
+  Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+  AbsoluteAddress += IncRegister;
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  memory[Value] = Register;
+}
+
+void CPU::InvokeNOP(u32 &Cycles) { Cycles--; }
+
+void CPU::SetCMPIM(u32 &Cycles, Mem &memory) {
+  Byte Value = Fetch(Cycles, memory);
+  Byte Result = ACC - Value;
+
+  if (Result >= 0) {
+    C = 1;
+    if (Result == 0) {
+      Z = 1;
+    }
+  }
+
+  if ((Result & (1 << 7)) > 0) {
+    N = 1;
+  }
+}
+
+void CPU::SetCMPZP(u32 &Cycles, Mem &memory) {
+  Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+  Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+  Byte Result = ACC - Value;
+
+  if (Result >= 0) {
+    C = 1;
+
+    if (Result == 0) {
+      Z = 1;
+    }
+  }
+
+  if ((Result & (1 << 7)) > 0) {
+    N = 1;
+  }
+}
+
+void CPU::SetCMPZPX(u32 &Cycles, Mem &memory) {
+  Byte ZeroPageAddress = Fetch(Cycles, memory);
+  ZeroPageAddress += RegisterX;
+
+  Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+  Byte Result = ACC - Value;
+
+  if (Result >= 0) {
+    C = 1;
+
+    if (Result == 0) {
+      Z = 1;
+    }
+  }
+
+  if ((Result & (1 << 7)) > 0) {
+    N = 1;
+  }
+}
+
+void CPU::SetCMPABS(u32 &Cycles, Mem &memory) {
+  Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  Byte Result = ACC - Value;
+
+  if (Result >= 0) {
+    C = 1;
+
+    if (Result == 0) {
+      Z = 1;
+    }
+  }
+
+  if ((Result & (1 << 7)) > 0) {
+    N = 1;
+  }
+}
+
+void CPU::SetCMPABSX(u32 &Cycles, Mem &memory) {
+  Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+  AbsoluteAddress += RegisterX;
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  Byte Result = ACC - Value;
+
+  if (Result >= 0) {
+    C = 1;
+
+    if (Result == 0) {
+      Z = 1;
+    }
+  }
+
+  if ((Result & (1 << 7)) > 0) {
+    N = 1;
+  }
+}
+
+void CPU::SetCMPABSY(u32 &Cycles, Mem &memory) {
+  Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+  AbsoluteAddress += RegisterY;
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  Byte Result = ACC - Value;
+
+  C = ACC >= Value;
+  Z = Result == 0;
+  N = Result & (1 << 7);
+}
+
+void CPU::SetCMPINRX(u32 &Cycles, Mem &memory) {
+  Word IndirectAddress = FetchWord(Cycles, memory);
+
+  Word AbsoluteAddress = ReadWord(Cycles, IndirectAddress, memory);
+
+  AbsoluteAddress += RegisterX;
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  Byte Result = ACC - Value;
+
+  C = ACC >= Value;
+  Z = Result == 0;
+  N = Result & (1 << 7);
+}
+
+void CPU::SetCMPINRY(u32 &Cycles, Mem &memory) {
+  Word IndirectAddress = FetchWord(Cycles, memory);
+
+  Word AbsoluteAddress = ReadWord(Cycles, IndirectAddress, memory);
+
+  AbsoluteAddress += RegisterY;
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  Byte Result = ACC - Value;
+
+  C = ACC >= Value;
+  Z = Result == 0;
+  N = Result & (1 << 7);
+}
+
+void CPU::SetORAIM(u32 &Cycles, Mem &memory) {
+  Byte Value = Fetch(Cycles, memory);
+
+  ACC = ACC | Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetORAZP(u32 &Cycles, Mem &memory) {
+  Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+  Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+  ACC |= Value;
+}
+
+void CPU::SetORAZPX(u32 &Cycles, Mem &memory) {
+  Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+  ZeroPageAddress += RegisterX;
+  Cycles--;
+
+  Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+  ACC |= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetORAABS(u32 &Cycles, Mem &memory) {
+  Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  ACC |= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetORAABSX(u32 &Cycles, Mem &memory) {
+  Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+  AbsoluteAddress += RegisterX;
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  ACC |= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetORAABSY(u32 &Cycles, Mem &memory) {
+  Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+  AbsoluteAddress += RegisterY;
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  ACC |= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetORAINRX(u32 &Cycles, Mem &memory) {
+  Word IndirectAddress = FetchWord(Cycles, memory);
+
+  IndirectAddress += RegisterX;
+
+  Word AbsoluteAddress = ReadWord(Cycles, IndirectAddress, memory);
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  ACC |= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetORAINRY(u32 &Cycles, Mem &memory) {
+  Word IndirectAddress = FetchWord(Cycles, memory);
+
+  IndirectAddress += RegisterY;
+
+  Word AbsoluteAddress = ReadWord(Cycles, IndirectAddress, memory);
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  ACC |= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetSTRIndirectX(u32 &Cycles, Byte Register, Mem &memory) {
+  Word RelativeAddress = FetchWord(Cycles, memory);
+
+  RelativeAddress += RegisterX;
+  Cycles--;
+
+  Word AbsoluteAddress = ReadWord(Cycles, RelativeAddress, memory);
+
+  memory[AbsoluteAddress] = Register;
+}
+
+void CPU::SetSTRIndirectY(u32 &Cycles, Byte Register, Mem &memory) {
+  Word RelativeAddress = FetchWord(Cycles, memory);
+
+  RelativeAddress += RegisterY;
+  Cycles--;
+
+  Word AbsoluteAddress = ReadWord(Cycles, RelativeAddress, memory);
+
+  memory[AbsoluteAddress] = Register;
+}
+
+void CPU::InvokeJSR(u32 &Cycles, Mem &memory) {
+  Word SubAddr = FetchWord(Cycles, memory);
+  memory.WriteWord(Cycles, PC - 1, SP);
+  PC++;
+  PC = SubAddr;
+  Cycles--;
+}
+
+void CPU::InvokeJMPABS(u32 &Cycles, Mem &memory) {
+  Word SubAddr = FetchWord(Cycles, memory);
+  PC = SubAddr;
+}
+
+void CPU::InvokeJMPINR(u32 &Cycles, Mem &memory) {
+  Word SubAddr = FetchWord(Cycles, memory);
+
+  Word TargetAddress = ReadWord(Cycles, SubAddr, memory);
+
+  PC = TargetAddress;
 }
 
 Byte CPU::ReadByte(u32 &Cycles, Byte Address, Mem &memory) {
@@ -69,6 +393,8 @@ void CPU::SetImmediate(u32 &Cycles, Byte &Register, Mem &memory) {
   Byte Value = Fetch(Cycles, memory);
 
   Register = Value;
+
+  SetStatusZN(Register);
 }
 
 void CPU::SetZeroPage(u32 &Cycles, Byte &Register, Mem &memory) {
@@ -77,6 +403,8 @@ void CPU::SetZeroPage(u32 &Cycles, Byte &Register, Mem &memory) {
   CheckZPOverflow(ZeroPageAddress);
 
   Register = ReadByte(Cycles, ZeroPageAddress, memory);
+
+  SetStatusZN(Register);
 }
 
 void CPU::SetZeroPageByRegister(u32 &Cycles, Byte &Register, Byte IncRegister,
@@ -88,12 +416,52 @@ void CPU::SetZeroPageByRegister(u32 &Cycles, Byte &Register, Byte IncRegister,
   Cycles--;
 
   Register = ReadByte(Cycles, ZeroPageAddress, memory);
+
+  SetStatusZN(Register);
+}
+
+void CPU::SetIndirectX(u32 &Cycles, Byte &Register, Mem &memory) {
+  Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+  ZeroPageAddress += RegisterX;
+
+  ZeroPageAddress = ZeroPageAddress & 0xFF;
+  Cycles--;
+
+  Word EffectiveAddress = ReadWord(Cycles, ZeroPageAddress, memory);
+
+  Register = ReadByte(Cycles, EffectiveAddress, memory);
+
+  SetStatusZN(Register);
+}
+
+void CPU::SetIndirectY(u32 &Cycles, Byte &Register, Mem &memory) {
+  Byte ZeroPageAddress = Fetch(Cycles, memory);
+
+  Byte HighByte = ReadByte(Cycles, ZeroPageAddress + 1, memory);
+
+  Byte FullAddress = ZeroPageAddress;
+  FullAddress |= HighByte;
+
+  FullAddress += RegisterY;
+
+  Word EffectiveAddress = ReadWord(Cycles, FullAddress, memory);
+
+  Register = ReadByte(Cycles, EffectiveAddress, memory);
+
+  if ((FullAddress & 0xFF00) != (EffectiveAddress & 0xFF00)) {
+    Cycles--;
+  }
+
+  SetStatusZN(Register);
 }
 
 void CPU::SetAbsolute(u32 &Cycles, Byte &Register, Mem &memory) {
   Word AbsoluteAddress = FetchWord(Cycles, memory);
 
   Register = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  SetStatusZN(Register);
 }
 
 void CPU::SetAbsoluteByRegister(u32 &Cycles, Byte &Register, Byte IncRegister,
@@ -106,6 +474,108 @@ void CPU::SetAbsoluteByRegister(u32 &Cycles, Byte &Register, Byte IncRegister,
   if ((AbsoluteAddress & 0xFF00) != (EffectiveAddress & 0xFF00)) {
     Cycles--;
   }
+
+  SetStatusZN(Register);
+}
+
+void CPU::TransferRegister(u32 &Cycles, Byte Register, Byte &StoreRegister,
+                           Mem &memory) {
+  StoreRegister = Register;
+  Cycles--;
+
+  SetStatusZN(StoreRegister);
+}
+
+void CPU::SetANDIM(u32 &Cycles, Mem &memory) {
+  Byte Value = Fetch(Cycles, memory);
+
+  ACC &= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetANDZP(u32 &Cycles, Mem &memory) {
+  Byte ZeroPageAddress = Fetch(Cycles, memory);
+  Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+  ACC &= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetANDZPX(u32 &Cycles, Mem &memory) {
+  Byte ZeroPageAddress = Fetch(Cycles, memory);
+  ZeroPageAddress += RegisterX;
+  Cycles--;
+  Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
+
+  ACC &= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetANDABS(u32 &Cycles, Mem &memory) {
+  Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  ACC &= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetANDABSX(u32 &Cycles, Mem &memory) {
+  Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+  // todo: implement page crossing
+  AbsoluteAddress += RegisterX;
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  ACC &= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetANDABSY(u32 &Cycles, Mem &memory) {
+  Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+  // todo: implement page crossing
+  AbsoluteAddress += RegisterX;
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  ACC &= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetANDINRX(u32 &Cycles, Mem &memory) {
+  Word SubAddr = FetchWord(Cycles, memory);
+
+  Word DirectAddress = ReadWord(Cycles, SubAddr, memory);
+
+  DirectAddress += RegisterX;
+
+  Byte Value = ReadByte(Cycles, DirectAddress, memory);
+
+  ACC &= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetANDINRY(u32 &Cycles, Mem &memory) {
+  Word SubAddr = FetchWord(Cycles, memory);
+
+  Word DirectAddress = ReadWord(Cycles, SubAddr, memory);
+
+  DirectAddress += RegisterY;
+
+  Byte Value = ReadByte(Cycles, DirectAddress, memory);
+
+  ACC &= Value;
+
+  SetStatusZN(ACC);
 }
 
 // check zero page overflow
@@ -124,6 +594,100 @@ void CPU::ZeroPageWrapAround(u32 &Cycles, Byte &Address) {
   Cycles--;
 }
 
+void CPU::SetEORIM(u32 &Cycles, Mem &memory) {
+  Byte Value = Fetch(Cycles, memory);
+
+  ACC ^= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetEORZP(u32 &Cycles, Mem &memory) {
+  Byte Address = Fetch(Cycles, memory);
+
+  Byte Value = ReadByte(Cycles, Address, memory);
+
+  ACC ^= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetEORZPX(u32 &Cycles, Mem &memory) {
+  Byte Address = Fetch(Cycles, memory);
+
+  Address += RegisterX;
+
+  Byte Value = ReadByte(Cycles, Address, memory);
+
+  ACC ^= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetEORABS(u32 &Cycles, Mem &memory) {
+  Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  ACC ^= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetEORABSX(u32 &Cycles, Mem &memory) {
+  Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+  AbsoluteAddress += RegisterX;
+  Cycles--;
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  ACC ^= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetEORABSY(u32 &Cycles, Mem &memory) {
+  Word AbsoluteAddress = FetchWord(Cycles, memory);
+
+  AbsoluteAddress += RegisterY;
+  Cycles--;
+
+  Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
+
+  ACC ^= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetEORINRX(u32 &Cycles, Mem &memory) {
+  Word Address = FetchWord(Cycles, memory);
+  Address += RegisterX;
+
+  Word DirectAddress = ReadWord(Cycles, Address, memory);
+
+  Byte Value = ReadByte(Cycles, DirectAddress, memory);
+
+  ACC ^= Value;
+
+  SetStatusZN(ACC);
+}
+
+void CPU::SetEORINRY(u32 &Cycles, Mem &memory) {
+  Word Address = FetchWord(Cycles, memory);
+
+  Address += RegisterY;
+
+  Word DirectAddress = ReadWord(Cycles, Address, memory);
+
+  Byte Value = ReadByte(Cycles, DirectAddress, memory);
+
+  ACC ^= Value;
+
+  CheckZPOverflow(ACC);
+  SetStatusZN(ACC);
+}
+
 void CPU::LoadFlags(u32 &Cycles, Byte Flags) {
   Z = Flags >> 7;
   O = Flags >> 6;
@@ -136,881 +700,14 @@ void CPU::LoadFlags(u32 &Cycles, Byte Flags) {
   Cycles--;
 }
 
-void CPU::Execute(u32 Cycles, Mem &memory) {
+void CPU::Execute(u32 Cycles, CycleInfo ci, Mem &memory) {
   while (Cycles > 0) {
     Byte Instruction = Fetch(Cycles, memory);
 
-    printf("%hhx\n", Instruction);
-
-    switch (Instruction) {
-    case INS_PHA: {
-      PushByte(ACC, Cycles, memory);
-      printf("ACC Pushed on stack\n");
-    } break;
-
-    case INS_PHP: {
-      Byte sf = (Z << 7) | (O << 6) | (1 << 5) | (B << 4) | (D << 3) |
-                (I << 2) | (Z << 1) | C;
-
-      PushByte(sf, Cycles, memory);
-
-      printf("Flags Pushed on stack %hhx \n", sf);
-    } break;
-
-    case INS_PLA: {
-      Byte Value = PullByte(Cycles, memory);
-      ACC = Value;
-      Cycles--;
-
-      SetStatusZN(ACC);
-      printf("Pull Acc %hhx\n", Value);
-    }
-
-    case INS_PLP: {
-      Byte Flags = PullByte(Cycles, memory);
-
-      LoadFlags(Cycles, Flags);
-
-      printf("Z %i N %i O %i B %i D %i I %i Z %i C %i\n", Z, N, O, B, D, I, Z,
-             C);
-    } break;
-
-    case INS_LDA_IM: {
-      SetImmediate(Cycles, ACC, memory);
-      SetStatusZN(ACC);
-      printf("Imidiate BV: %hhx V: %i Z: %i N: %i\n", ACC, ACC, Z, N);
-    } break;
-
-    case INS_LDA_ZP: {
-      SetZeroPage(Cycles, ACC, memory);
-      SetStatusZN(ACC);
-      printf("ZeroPageAddress BV: %hhx V: %i Z: %i N: %i\n", ACC, ACC, Z, N);
-    } break;
-
-    case INS_LDA_ZPX: {
-      SetZeroPageByRegister(Cycles, ACC, RegisterX, memory);
-      SetStatusZN(ACC);
-
-      printf("ZeroPageAddressX  BV: %hhx V: %i Z: %i N: %i X: %hhx \n", ACC,
-             ACC, Z, N, RegisterX);
-    } break;
-
-    case INS_LDA_ABS: {
-      SetAbsolute(Cycles, ACC, memory);
-
-      SetStatusZN(ACC);
-      printf("LDA ABS ACC: %hhx Z: %i N: %i \n", ACC, Z, N);
-    } break;
-
-    case INS_LDA_ABSX: {
-      SetAbsoluteByRegister(Cycles, ACC, RegisterX, memory);
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_LDA_ABSY: {
-      SetAbsoluteByRegister(Cycles, ACC, RegisterY, memory);
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_LDA_INRX: {
-      Byte ZeroPageAddress = Fetch(Cycles, memory);
-
-      ZeroPageAddress += RegisterX;
-
-      ZeroPageAddress = ZeroPageAddress & 0xFF;
-      Cycles--;
-
-      Word EffectiveAddress = ReadWord(Cycles, ZeroPageAddress, memory);
-
-      ACC = ReadByte(Cycles, EffectiveAddress, memory);
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_LDA_INRY: {
-      Byte ZeroPageAddress = Fetch(Cycles, memory);
-
-      Byte HighByte = ReadByte(Cycles, ZeroPageAddress + 1, memory);
-
-      Byte FullAddress = ZeroPageAddress;
-      FullAddress |= HighByte;
-
-      FullAddress += RegisterY;
-
-      Word EffectiveAddress = ReadWord(Cycles, FullAddress, memory);
-
-      ACC = ReadByte(Cycles, EffectiveAddress, memory);
-
-      if ((FullAddress & 0xFF00) != (EffectiveAddress & 0xFF00)) {
-        Cycles--;
-      }
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_JSR: {
-      Word SubAddr = FetchWord(Cycles, memory);
-      memory.WriteWord(Cycles, PC - 1, SP);
-      PC++;
-      PC = SubAddr;
-      Cycles--;
-      printf("Jump absolute %hu BV: %hhx V: %i Z: %i N: %i X: %hhx \n", SP, ACC,
-             ACC, Z, N, RegisterX);
-
-    } break;
-
-    case INS_JMP_ABS: {
-      Word SubAddr = FetchWord(Cycles, memory);
-      PC = SubAddr;
-
-      printf("JMP ABS PC: %hu\n", PC);
-    } break;
-
-    case INS_JMP_INR: {
-      Word SubAddr = FetchWord(Cycles, memory);
-
-      Word TargetAddress = ReadWord(Cycles, SubAddr, memory);
-
-      PC = TargetAddress;
-
-      printf("JMP IND SUB: %hu TA: %hu PC: %hu\n", SubAddr, TargetAddress, PC);
-    } break;
-
-    case INS_LDX_IM: {
-      SetImmediate(Cycles, RegisterX, memory);
-
-      SetStatusZN(RegisterX);
-      printf("Load X Imidiate BV: %hhx, V: %x Z: %i N: %i X: %hhx \n",
-             RegisterX, RegisterX, Z, N, RegisterX);
-    } break;
-
-    case INS_LDX_ZP: {
-      SetZeroPage(Cycles, RegisterX, memory);
-
-      SetStatusZN(RegisterX);
-      printf("Load X ZP BV: %hhx, V: %x Z: %i N: %i  \n", RegisterX, RegisterX,
-             Z, N);
-
-    } break;
-
-    case INS_LDX_ZPY: {
-      SetZeroPageByRegister(Cycles, RegisterX, RegisterY, memory);
-      SetStatusZN(RegisterX);
-    } break;
-
-    case INS_LDX_ABS: {
-      SetAbsolute(Cycles, RegisterX, memory);
-
-      SetStatusZN(RegisterX);
-      printf("Load X ABS X: %hhx, V: %x Z: %i N: %i Y: %hhx \n", RegisterX,
-             RegisterX, Z, N, RegisterY);
-
-    } break;
-
-    case INS_LDX_ABSY: {
-      SetAbsoluteByRegister(Cycles, RegisterX, RegisterY, memory);
-
-      SetStatusZN(RegisterX);
-      printf("Load X ABS X: %hhx, V: %x Z: %i N: %i Y: %hhx \n", RegisterX,
-             RegisterX, Z, N, RegisterY);
-
-    } break;
-
-    case INS_LDY_IM: {
-      SetImmediate(Cycles, RegisterY, memory);
-
-      SetStatusZN(RegisterY);
-
-      printf("Load Y IM Y: %hhx, V: %x Z: %i N: %i \n", RegisterY, RegisterY, Z,
-             N);
-
-    } break;
-
-    case INS_LDY_ZP: {
-      SetZeroPage(Cycles, RegisterY, memory);
-      SetStatusZN(RegisterY);
-    } break;
-
-    case INS_LDY_ZPX: {
-      SetZeroPageByRegister(Cycles, RegisterY, RegisterX, memory);
-      SetStatusZN(RegisterY);
-    } break;
-
-    case INS_LDY_ABS: {
-      SetAbsolute(Cycles, RegisterY, memory);
-
-      SetStatusZN(RegisterY);
-    } break;
-
-    case INS_LDY_ABSX: {
-      SetAbsoluteByRegister(Cycles, RegisterY, RegisterX, memory);
-
-      SetStatusZN(RegisterY);
-    } break;
-
-    case INS_STR_AZP: {
-      Byte ZeroPageAddress = Fetch(Cycles, memory);
-
-      Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
-
-      memory[Value] = ACC;
-
-      printf("STA ACC: %hhx mem: %hhx, memv: %hu\n", ACC, memory[Value],
-             memory[Value]);
-    } break;
-
-    case INS_STR_AZPX: {
-      Byte ZeroPageAddress = Fetch(Cycles, memory);
-
-      ZeroPageAddress += RegisterX;
-      Cycles--;
-
-      Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
-
-      memory[Value] = ACC;
-
-      printf("STAZPX ACC: %hhx mem: %hhx mem: %hu, Address %hhx \n", ACC,
-             memory[Value], memory[Value], ZeroPageAddress);
-    } break;
-
-    case INS_STR_AABS: {
-      Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      memory[Value] = ACC;
-    } break;
-
-    case INS_STR_AABSX: {
-      Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-      AbsoluteAddress += RegisterX;
-
-      Cycles--;
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      memory[Value] = ACC;
-    } break;
-
-    case INS_STR_XZP: {
-      Byte ZeroPageAddress = Fetch(Cycles, memory);
-      CheckZPOverflow(ZeroPageAddress);
-
-      Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
-
-      memory[Value] = RegisterX;
-    } break;
-
-    case INS_STR_XZPY: {
-      Byte ZeroPageAddress = Fetch(Cycles, memory);
-
-      ZeroPageAddress += RegisterY;
-      Cycles--;
-
-      Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
-
-      memory[Value] = RegisterX;
-    } break;
-
-    case INS_STR_XABS: {
-      Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-      Word EffectiveAddress = ReadWord(Cycles, AbsoluteAddress, memory);
-
-      memory[EffectiveAddress] = RegisterX;
-    } break;
-
-    case INS_STR_YZP: {
-      Byte ZeroPageAddress = Fetch(Cycles, memory);
-
-      CheckZPOverflow(ZeroPageAddress);
-
-      Byte EffectiveAddress = ReadByte(Cycles, ZeroPageAddress, memory);
-
-      memory[EffectiveAddress] = RegisterY;
-    } break;
-
-    case INS_STR_YZPX: {
-      Byte ZeroPageAddress = Fetch(Cycles, memory);
-
-      ZeroPageAddress += RegisterX;
-      Cycles--;
-
-      Byte EffectiveAddress = ReadByte(Cycles, ZeroPageAddress, memory);
-
-      memory[EffectiveAddress] = RegisterY;
-    } break;
-
-    case INS_STR_YABS: {
-      Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-      Word EffectiveAddress = ReadWord(Cycles, AbsoluteAddress, memory);
-
-      memory[EffectiveAddress] = RegisterY;
-    } break;
-
-    case INS_TAX: {
-      RegisterX = ACC;
-      Cycles--;
-
-      SetStatusZN(RegisterX);
-    } break;
-
-    case INS_TAY: {
-      RegisterY = ACC;
-      Cycles--;
-
-      SetStatusZN(RegisterY);
-    } break;
-
-    case INS_TSX: {
-      RegisterX = SP;
-      Cycles--;
-
-      SetStatusZN(RegisterX);
-    } break;
-
-    case INS_TXA: {
-      ACC = RegisterX;
-      Cycles--;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_TXS: {
-      SP = RegisterX;
-      Cycles--;
-
-      SetStatusZN(SP);
-
-    } break;
-
-    case INS_TYA: {
-      ACC = RegisterY;
-      Cycles--;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_AND_IM: {
-      Byte Value = Fetch(Cycles, memory);
-
-      ACC &= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_AND_ZP: {
-      Byte ZeroPageAddress = Fetch(Cycles, memory);
-      Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
-
-      ACC &= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_AND_ZPX: {
-      Byte ZeroPageAddress = Fetch(Cycles, memory);
-
-      ZeroPageAddress += RegisterX;
-
-      Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
-
-      ACC &= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_AND_ABS: {
-      Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      ACC &= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_AND_ABSX: {
-      Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-      AbsoluteAddress += RegisterX;
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      ACC &= Value;
-
-      // CheckZPOverflow
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_AND_ABSY: {
-      Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-      AbsoluteAddress += RegisterY;
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      ACC &= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_AND_INRX: {
-      Word SubAddr = FetchWord(Cycles, memory);
-
-      Word DirectAddress = ReadWord(Cycles, SubAddr, memory);
-
-      DirectAddress += RegisterX;
-
-      Byte Value = ReadByte(Cycles, DirectAddress, memory);
-
-      ACC &= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_AND_INRY: {
-      Word SubAddr = FetchWord(Cycles, memory);
-
-      Word DirectAddress = ReadWord(Cycles, SubAddr, memory);
-
-      DirectAddress += RegisterY;
-
-      Byte Value = ReadByte(Cycles, DirectAddress, memory);
-
-      ACC &= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_EOR_IM: {
-      Byte Value = Fetch(Cycles, memory);
-
-      ACC ^= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_EOR_ZP: {
-      Byte Address = Fetch(Cycles, memory);
-
-      Byte Value = ReadByte(Cycles, Address, memory);
-
-      ACC ^= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_EOR_ZPX: {
-      Byte Address = Fetch(Cycles, memory);
-
-      Address += RegisterX;
-      Cycles--;
-
-      Byte Value = ReadByte(Cycles, Address, memory);
-
-      ACC ^= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_EOR_ABS: {
-      Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      ACC ^= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_EOR_ABSX: {
-      Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-      AbsoluteAddress += RegisterX;
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      ACC ^= Value;
-
-      CheckZPOverflow(ACC);
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_EOR_ABSY: {
-      Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-      AbsoluteAddress += RegisterY;
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      ACC ^= Value;
-
-      CheckZPOverflow(ACC);
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_EOR_INRX: {
-      Word Address = FetchWord(Cycles, memory);
-      Address += RegisterX;
-
-      Word DirectAddress = ReadWord(Cycles, Address, memory);
-
-      Byte Value = ReadByte(Cycles, DirectAddress, memory);
-
-      ACC ^= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_EOR_INRY: {
-      Word Address = FetchWord(Cycles, memory);
-
-      Address += RegisterY;
-
-      Word DirectAddress = ReadWord(Cycles, Address, memory);
-
-      Byte Value = ReadByte(Cycles, DirectAddress, memory);
-
-      ACC ^= Value;
-
-      CheckZPOverflow(ACC);
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_ORA_IM: {
-      Byte Value = Fetch(Cycles, memory);
-
-      ACC |= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_ORA_ZP: {
-      Byte ZeroPageAddress = Fetch(Cycles, memory);
-
-      Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
-
-      ACC |= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_ORA_ZPX: {
-      Byte ZeroPageAddress = Fetch(Cycles, memory);
-
-      ZeroPageAddress += RegisterX;
-      Cycles--;
-
-      Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
-
-      ACC |= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_ORA_ABS: {
-      Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      ACC |= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_ORA_ABSX: {
-      Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-      AbsoluteAddress += RegisterX;
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      ACC |= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_ORA_ABSY: {
-      Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-      AbsoluteAddress += RegisterY;
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      ACC |= Value;
-
-      SetStatusZN(ACC);
-    } break;
-
-    case INS_ORA_INRX: {
-      Word IndirectAddress = FetchWord(Cycles, memory);
-
-      IndirectAddress += RegisterX;
-
-      Word AbsoluteAddress = ReadWord(Cycles, IndirectAddress, memory);
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      ACC |= Value;
-
-      SetStatusZN(ACC);
-    }
-
-    case INS_ORA_INRY: {
-      Word IndirectAddress = FetchWord(Cycles, memory);
-
-      IndirectAddress += RegisterY;
-
-      Word AbsoluteAddress = ReadWord(Cycles, IndirectAddress, memory);
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      ACC |= Value;
-
-      SetStatusZN(ACC);
-    }
-
-    case INS_CMP_IM: {
-      Byte Value = Fetch(Cycles, memory);
-      Byte Result = ACC - Value;
-
-      if (Result >= 0) {
-        C = 1;
-        if (Result == 0) {
-          Z = 1;
-        }
-      }
-
-      if ((Result & (1 << 7)) > 0) {
-        N = 1;
-      }
-    } break;
-
-    case INS_CMP_ZP: {
-      Byte ZeroPageAddress = Fetch(Cycles, memory);
-
-      Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
-
-      Byte Result = ACC - Value;
-
-      if (Result >= 0) {
-        C = 1;
-
-        if (Result == 0) {
-          Z = 1;
-        }
-      }
-
-      if ((Result & (1 << 7)) > 0) {
-        N = 1;
-      }
-    } break;
-
-    case INS_CMP_ZPX: {
-      Byte ZeroPageAddress = Fetch(Cycles, memory);
-      ZeroPageAddress += RegisterX;
-
-      Byte Value = ReadByte(Cycles, ZeroPageAddress, memory);
-
-      Byte Result = ACC - Value;
-
-      if (Result >= 0) {
-        C = 1;
-
-        if (Result == 0) {
-          Z = 1;
-        }
-      }
-
-      if ((Result & (1 << 7)) > 0) {
-        N = 1;
-      }
-    } break;
-
-    case INS_CMP_ABS: {
-      Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      Byte Result = ACC - Value;
-
-      if (Result >= 0) {
-        C = 1;
-
-        if (Result == 0) {
-          Z = 1;
-        }
-      }
-
-      if ((Result & (1 << 7)) > 0) {
-        N = 1;
-      }
-    } break;
-
-    case INS_CMP_ABSX: {
-      Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-      AbsoluteAddress += RegisterX;
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      Byte Result = ACC - Value;
-
-      if (Result >= 0) {
-        C = 1;
-
-        if (Result == 0) {
-          Z = 1;
-        }
-      }
-
-      if ((Result & (1 << 7)) > 0) {
-        N = 1;
-      }
-    } break;
-
-    case INS_CMP_ABSY: {
-      Word AbsoluteAddress = FetchWord(Cycles, memory);
-
-      AbsoluteAddress += RegisterY;
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      Byte Result = ACC - Value;
-
-      C = ACC >= Value;
-      Z = Result == 0;
-      N = Result & (1 << 7);
-
-    } break;
-
-    case INS_CMP_INRX: {
-      Word IndirectAddress = FetchWord(Cycles, memory);
-
-      Word AbsoluteAddress = ReadWord(Cycles, IndirectAddress, memory);
-
-      AbsoluteAddress += RegisterX;
-
-      Byte Value = ReadByte(Cycles, AbsoluteAddress, memory);
-
-      Byte Result = ACC - Value;
-
-      C = ACC >= Value;
-      Z = Result == 0;
-      N = Result & (1 << 7);
-    } break;
-
-    case INS_NOP: {
-      Cycles--;
-      printf("No OP\n");
-    } break;
-
-    default: {
-      printf("Instruction not found %hhx \n", Instruction);
-      assert(false);
-    } break;
+    if(ci.I2FuncMap.find(Instruction) != ci.I2FuncMap.end()) {
+      ci.I2FuncMap[Instruction](*this, Cycles, memory);
+    }else {
+      PANIC("OOPs");
     }
   }
-}
-
-void CycleInfo::Init(CPU& cpu) {
-  I2CMap = {
-      {CPU::INS_LDA_IM, 2},    {CPU::INS_LDA_ZP, 3},    {CPU::INS_LDA_ZPX, 4},
-      {CPU::INS_LDA_ABS, 4},   {CPU::INS_LDA_ABSX, 4},  {CPU::INS_LDA_ABSY, 4},
-      {CPU::INS_LDA_INRX, 6},  {CPU::INS_LDA_INRY, 5},  {CPU::INS_LDX_IM, 2},
-      {CPU::INS_LDX_ZP, 3},    {CPU::INS_LDX_ZPY, 4},   {CPU::INS_LDX_ABS, 4},
-      {CPU::INS_LDX_ABSY, 4},  {CPU::INS_LDY_IM, 2},    {CPU::INS_LDY_ZP, 3},
-      {CPU::INS_LDY_ZPX, 4},   {CPU::INS_LDY_ABS, 4},   {CPU::INS_LDY_ABSX, 4},
-      {CPU::INS_STR_AZP, 3},   {CPU::INS_STR_AZPX, 4},  {CPU::INS_STR_AABS, 4},
-      {CPU::INS_STR_AABSX, 5}, {CPU::INS_STR_AABSY, 5}, {CPU::INS_STR_XZP, 3},
-      {CPU::INS_STR_XZPY, 4},  {CPU::INS_STR_XABS, 4},  {CPU::INS_STR_YZP, 3},
-      {CPU::INS_STR_YZPX, 4},  {CPU::INS_STR_YABS, 4},  {CPU::INS_TAX, 2},
-      {CPU::INS_TAY, 2},       {CPU::INS_TSX, 2},       {CPU::INS_TXA, 2},
-      {CPU::INS_TXS, 2},       {CPU::INS_TYA, 2},       {CPU::INS_JSR, 6},
-      {CPU::INS_JMP_ABS, 3},   {CPU::INS_JMP_INR, 5},   {CPU::INS_PHA, 3},
-      {CPU::INS_PHP, 3},       {CPU::INS_PLA, 4},       {CPU::INS_PLP, 4},
-      {CPU::INS_AND_IM, 2},    {CPU::INS_AND_ZP, 3},    {CPU::INS_AND_ZPX, 4},
-      {CPU::INS_AND_ABS, 4},   {CPU::INS_AND_ABSX, 4},  {CPU::INS_AND_ABSY, 4},
-      {CPU::INS_AND_INRX, 6},  {CPU::INS_AND_INRY, 5},  {CPU::INS_EOR_IM, 2},
-      {CPU::INS_EOR_ZP, 3},    {CPU::INS_EOR_ZPX, 4},   {CPU::INS_EOR_ABS, 4},
-      {CPU::INS_EOR_ABSX, 4},  {CPU::INS_EOR_ABSY, 4},  {CPU::INS_EOR_INRX, 6},
-      {CPU::INS_EOR_INRY, 5},  {CPU::INS_NOP, 2},       {CPU::INS_ORA_IM, 2},
-      {CPU::INS_ORA_ZP, 3},    {CPU::INS_ORA_ZPX, 4},   {CPU::INS_ORA_ABS, 4},
-      {CPU::INS_ORA_ABSX, 4},  {CPU::INS_ORA_ABSY, 4},  {CPU::INS_ORA_INRX, 6},
-      {CPU::INS_ORA_INRY, 5},
-  };
-
-  I2PCMap = {
-      {CPU::INS_LDA_IM, 2},    {CPU::INS_LDA_ZP, 2},    {CPU::INS_LDA_ZPX, 2},
-      {CPU::INS_LDA_ABS, 3},   {CPU::INS_LDA_ABSX, 3},  {CPU::INS_LDA_ABSY, 3},
-      {CPU::INS_LDA_INRX, 2},  {CPU::INS_LDA_INRY, 2},  {CPU::INS_LDX_IM, 2},
-      {CPU::INS_LDX_ZP, 2},    {CPU::INS_LDX_ZPY, 2},   {CPU::INS_LDX_ABS, 3},
-      {CPU::INS_LDX_ABSY, 3},  {CPU::INS_LDY_IM, 2},    {CPU::INS_LDY_ZP, 2},
-      {CPU::INS_LDY_ZPX, 2},   {CPU::INS_LDY_ABS, 3},   {CPU::INS_LDY_ABSX, 3},
-      {CPU::INS_STR_AZP, 2},   {CPU::INS_STR_AZPX, 2},  {CPU::INS_STR_AABS, 3},
-      {CPU::INS_STR_AABSX, 3}, {CPU::INS_STR_AABSY, 3}, {CPU::INS_STR_XZP, 2},
-      {CPU::INS_STR_XZPY, 2},  {CPU::INS_STR_XABS, 3},  {CPU::INS_STR_YZP, 2},
-      {CPU::INS_STR_YZPX, 2},  {CPU::INS_STR_YABS, 3},  {CPU::INS_TAX, 1},
-      {CPU::INS_TAY, 1},       {CPU::INS_TSX, 1},       {CPU::INS_TXA, 1},
-      {CPU::INS_TXS, 1},       {CPU::INS_TYA, 1},       {CPU::INS_JSR, 3},
-      {CPU::INS_JMP_ABS, 3},   {CPU::INS_JMP_INR, 3},   {CPU::INS_PHA, 1},
-      {CPU::INS_PHP, 1},       {CPU::INS_PLA, 1},       {CPU::INS_PLP, 1},
-      {CPU::INS_AND_IM, 2},    {CPU::INS_AND_ZP, 2},    {CPU::INS_AND_ZPX, 2},
-      {CPU::INS_AND_ABS, 3},   {CPU::INS_AND_ABSX, 3},  {CPU::INS_AND_ABSY, 3},
-      {CPU::INS_AND_INRX, 2},  {CPU::INS_AND_INRY, 2},  {CPU::INS_EOR_IM, 2},
-      {CPU::INS_EOR_ZP, 2},    {CPU::INS_EOR_ZPX, 2},   {CPU::INS_EOR_ABS, 3},
-      {CPU::INS_EOR_ABSX, 3},  {CPU::INS_EOR_ABSY, 3},  {CPU::INS_EOR_INRX, 2},
-      {CPU::INS_EOR_INRY, 2},  {CPU::INS_NOP, 1},       {CPU::INS_ORA_IM, 2},
-      {CPU::INS_ORA_ZP, 2},    {CPU::INS_ORA_ZPX, 2},   {CPU::INS_ORA_ABS, 3},
-      {CPU::INS_ORA_ABSX, 3},  {CPU::INS_ORA_ABSY, 3},  {CPU::INS_ORA_INRX, 2},
-      {CPU::INS_ORA_INRY, 2},
-  };
-}
-
-u32 LoadCycles(Mem &memory, CycleInfo ci,  Word start_address) {
-  u32 total_cycles = 0;
-  Word pc = start_address;
-
-  while (true) {
-    Byte opcode = memory[pc];
-    if (ci.I2CMap.find(opcode) != ci.I2CMap.end()) {
-      total_cycles += ci.I2CMap[opcode];
-
-      switch (opcode) {
-      case CPU::INS_JSR: {
-        Word return_address = pc + ci.I2PCMap[opcode];
-
-        pc = memory[pc + 1] | (memory[pc + 2] << 8);
-        continue;
-      } break;
-
-      case CPU::INS_JMP_ABS: {
-        pc = memory[pc + 1] | (memory[pc + 2] << 8);
-        continue;
-      } break;
-
-      case CPU::INS_JMP_INR: {
-        Word pointer = memory[pc + 1] | (memory[pc + 2] << 8);
-
-        pc = memory[pointer] | (memory[pointer + 1] << 8);
-        continue;
-      } break;
-
-      default: {
-        pc += ci.I2PCMap[opcode];
-      } break;
-      }
-    } else {
-      printf("LoadCycles compleate!\n");
-      break;
-    }
-  }
-
-  return total_cycles;
 }

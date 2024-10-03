@@ -54,7 +54,7 @@ void Interface::EventLoop(CPU &cpu, u32 Cycles, Mem &memory, CycleInfo ci) {
   window->show();
   while (Fl::wait()) {
     if (runPressed == true) {
-      cpu.Execute(Cycles, memory);
+      cpu.Execute(Cycles, ci, memory);
       runPressed = false;
       this->Draw(cpu, memory);
     }
@@ -69,17 +69,16 @@ void Interface::EventLoop(CPU &cpu, u32 Cycles, Mem &memory, CycleInfo ci) {
       memory[0xFFFD] = 0x42;
       memory[0xFFFE] = 0x42;
 
-      memory[0x4244] = CPU::INS_PHP;
+      memory[0x4244] = CPU::INS_LDA_IM;
+      memory[0x4245] = 0x05;
 
-      memory[0x4245] = CPU::INS_PLP;
 
-      memory[0x4246] = CPU::INS_NOP;
+      memory[0x4246] = CPU::INS_LDX_ZP;
+      memory[0x4247] = 0x32;
+      memory[0x0032] = 0x03;
 
-      memory[0x4247] = CPU::INS_LDA_IM;
-      memory[0x4248] = 0x05;
-
-      memory[0x4249] = CPU::INS_ORA_IM;
-      memory[0x4250] = 0x03;
+      memory[0x4248] = CPU::INS_ORA_IM;
+      memory[0x4249] = 0x03;
 
       LoadCycles(memory, ci, 0x00FF);
 
@@ -110,5 +109,7 @@ void ResetPressed(Fl_Widget *w, void *data) {
 void Interface::CleanUp() {
   delete this->registerBox;
   delete this->runButton;
+  delete this->resetButton;
   delete this->window;
+
 }
