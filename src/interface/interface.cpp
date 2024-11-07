@@ -1,9 +1,30 @@
 #include "./interface.hpp"
 #include <FL/Enumerations.H>
 #include <FL/Fl_Button.H>
+#include <FL/fl_draw.H>
 #include <cstdio>
 #include <iostream>
 #include <sstream>
+
+void Editor::InitEditor() {
+  this->width = (Fl::w() / 3);
+  this->height = (Fl::h() / 1.5);
+  
+  this->position[0] = Fl::w() / 3;
+  this->position[1] = 100;
+
+}
+
+void Editor::Draw() {
+
+  editorSurface = new Fl_Box(position[0], position[1], width,height);
+  editorSurface->box(FL_EMBOSSED_BOX);
+  editorSurface->labelcolor(FL_BLACK);
+  editorSurface->labelfont(FL_BOLD);
+  editorSurface->labelsize(20);
+  
+ editorSurface->labeltype(FL_SHADOW_LABEL);
+}
 
 void Interface::InitWindow() {
   width = Fl::w();
@@ -11,10 +32,13 @@ void Interface::InitWindow() {
   window = new Fl_Window(width, height);
 
   window->fullscreen();
+
+  editor.InitEditor();
 }
 
 void Interface::Draw(CPU &cpu, Mem &memory) {
   if (!registerBox) { // Create the box only once
+    //
     registerBox = new Fl_Box(20, 30, width / 10, height / 3);
     registerBox->box(FL_DOWN_BOX);
     registerBox->labelcolor(FL_BLACK);
@@ -41,12 +65,14 @@ void Interface::Draw(CPU &cpu, Mem &memory) {
   resetButton = new Fl_Button(width / 2 + 50, 10, 40, 40);
   resetButton->label("Reset");
   resetButton->callback(ResetPressed, this);
+
 }
 
 void Interface::EventLoop(CPU &cpu, u32 Cycles, Mem &memory, CycleInfo ci) {
   if (this->window == nullptr) {
     PANIC("Window is uninitialized!");
   }
+  editor.Draw();
   this->Draw(cpu, memory);
   window->end();
   std::cout << "Test" << std::endl;

@@ -1,4 +1,5 @@
 #include "./opimpl.h"
+#include <cstdio>
 
 void LDA_IM(CPU &cpu, u32 &Cycles, Mem &memory) {
   cpu.SetImmediate(Cycles, cpu.ACC, memory);
@@ -74,6 +75,7 @@ void LDY_ABSX(CPU &cpu, u32 &Cycles, Mem &memory) {
 
 void PHA(CPU &cpu, u32 &Cycles, Mem &memory) {
   cpu.PushByte(cpu.ACC, Cycles, memory);
+  printf("PHP\n");
 }
 
 void PHP(CPU &cpu, u32 &Cycles, Mem &memory) {

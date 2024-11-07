@@ -4,8 +4,7 @@
 #include "ci.hpp"
 #include "opimpl.cpp"
 #include "ci.cpp"
-#include "opimpl.h"
-#include <stdio.h>
+#include <cstdio>
 
 void CPU::Reset(Mem &memory) {
   PC = 0xFFFC;

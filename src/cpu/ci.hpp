@@ -20,6 +20,6 @@ struct CycleInfo {
 };
 
 
-u32 LoadCycles(Mem &memory, CycleInfo ci, Word start_address);
+u32 LoadCycles(Mem &memory, CycleInfo& ci, Word start_address);
 
 #endif // !CYCLEINFO

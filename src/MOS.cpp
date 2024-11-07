@@ -28,12 +28,16 @@ void LoadIntoMem(Mem &mem) {
   mem[0x4245] = 0x05;
 
 
-  mem[0x4246] = CPU::INS_LDX_ZP;
-  mem[0x4247] = 0x32;
+  mem[0x4246] = CPU::INS_JSR;
+  mem[0x4247] = 0x41;
+  mem[0x4248] = 0x00;
+  mem[0x0041] = CPU::INS_LDX_ZP;
+  mem[0x0042] = 0x32;
   mem[0x0032] = 0x03;
+  mem[0x0043] = CPU::INS_PHA;
+  mem[0x0044] = CPU::INS_ORA_IM;
+  mem[0x0045] = 0x03;
 
-  mem[0x4248] = CPU::INS_ORA_IM;
-  mem[0x4249] = 0x03;
 }
 
 int VAPP(CPU& cpu, Mem& mem) {
@@ -47,12 +51,14 @@ int VAPP(CPU& cpu, Mem& mem) {
   ci.Init(cpu);
 
   u32 Cycles = LoadCycles(mem, ci, 0xFFFC);
+  printf("Cycles %i\n", Cycles);
 
   /*clock_t start = clock();*/
   
   /*clock_t end = clock();*/
 
   GUInterface.EventLoop(cpu, Cycles, mem, ci); 
+  printf("%i", cpu.RegisterX);
 
   /*printf("ACC: %hxx %i\n", cpu.ACC, cpu.ACC); */
   /*double elapsed_time = double(end - start) / CLOCKS_PER_SEC;*/

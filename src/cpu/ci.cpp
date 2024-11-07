@@ -1,4 +1,6 @@
 #include "ci.hpp"
+#include "cpu.hpp"
+#include "opimpl.h"
 
 void CycleInfo::Init(CPU &cpu) {
   I2CMap = {
@@ -126,16 +128,58 @@ void CycleInfo::Init(CPU &cpu) {
   AddFunc(CPU::INS_CMP_INRY, CMP_INRY);
 }
 
-u32 LoadCycles(Mem &memory, CycleInfo ci, Word start_address) {
+u32 LoadCycles(Mem &memory, CycleInfo &ci, Word start_address) {
   u32 total_cycles = 0;
+  u32 index_offset = 0;
   Word pc = start_address;
 
+  Byte opcode;
+
   while (true) {
-    Byte opcode = memory[pc];
+    opcode = memory[pc];
     if (ci.I2CMap.find(opcode) != ci.I2CMap.end()) {
       total_cycles += ci.I2CMap[opcode];
 
       switch (opcode) {
+      case CPU::INS_LDA_ABSX:
+      case CPU::INS_AND_ABSX:
+      case CPU::INS_ORA_ABSX:
+      case CPU::INS_EOR_ABSX: {
+        Word base_address = memory[pc + 1] | (memory[pc + 2] << 8);
+        // Check for page boundary crossing
+        if ((base_address & 0xFF00) != ((base_address + 1) & 0xFF00)) {
+          total_cycles += 1; // Extra cycle for page boundary cross
+        }
+        pc += ci.I2PCMap[opcode]; // Advance PC based on instruction size
+      } break;
+
+      // Indexed with Y addressing (e.g., LDA_ABSY, AND_ABSY)
+      case CPU::INS_LDA_ABSY:
+      case CPU::INS_AND_ABSY:
+      case CPU::INS_ORA_ABSY:
+      case CPU::INS_EOR_ABSY: {
+        Word base_address = memory[pc + 1] | (memory[pc + 2] << 8);
+        // Check for page boundary crossing
+        if ((base_address & 0xFF00) != ((base_address + 1) & 0xFF00)) {
+          total_cycles += 1; // Extra cycle for page boundary cross
+        }
+        pc += ci.I2PCMap[opcode];
+      } break;
+
+      // Indirect indexed with Y addressing (e.g., LDA_INRY)
+      case CPU::INS_LDA_INRY:
+      case CPU::INS_AND_INRY:
+      case CPU::INS_ORA_INRY:
+      case CPU::INS_EOR_INRY: {
+        Word pointer = memory[pc + 1];
+        Word base_address = memory[pointer] | (memory[pointer + 1] << 8);
+        // Check for page boundary crossing
+        if ((base_address & 0xFF00) != ((base_address + 1) & 0xFF00)) {
+          total_cycles += 1; // Extra cycle for page boundary cross
+        }
+        pc += ci.I2PCMap[opcode];
+      } break;
+
       case CPU::INS_JSR: {
         Word return_address = pc + ci.I2PCMap[opcode];
 
@@ -146,21 +190,21 @@ u32 LoadCycles(Mem &memory, CycleInfo ci, Word start_address) {
       case CPU::INS_JMP_ABS: {
         pc = memory[pc + 1] | (memory[pc + 2] << 8);
         continue;
-      } break;
+      };
 
       case CPU::INS_JMP_INR: {
         Word pointer = memory[pc + 1] | (memory[pc + 2] << 8);
 
         pc = memory[pointer] | (memory[pointer + 1] << 8);
         continue;
-      } break;
+      };
 
       default: {
         pc += ci.I2PCMap[opcode];
-      } break;
+      };
       }
     } else {
-      printf("LoadCycles compleate!\n");
+      printf("LoadCycles compleate! on opcode 0x%02X \n", opcode);
       break;
     }
   }
