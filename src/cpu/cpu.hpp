@@ -2,8 +2,8 @@
 #include "../types/types.hpp"
 #include "ci.hpp"
 
-#ifndef MOS_CPU_DEF
-#define MOS_CPU_DEF
+#ifndef __MOS_CPU_DEF__
+#define __MOS_CPU_DEF__
 
 
 struct CPU {

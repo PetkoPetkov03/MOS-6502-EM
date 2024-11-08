@@ -1,6 +1,6 @@
 #include "../types/types.hpp"
-#ifndef MOS_MEM_DEF
-#define MOS_MEM_DEF
+#ifndef __MOS_MEM_DEF__
+#define __MOS_MEM_DEF__
 #include <assert.h>
 
 struct Mem {

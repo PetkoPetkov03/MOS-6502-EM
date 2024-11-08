@@ -1,5 +1,5 @@
-#ifndef CYCLEINFO
-#define CYCLEINFO
+#ifndef __CYCLEINFO__
+#define __CYCLEINFO__
 
 #include "../types/types.hpp"
 #include "../memory/memory.hpp"

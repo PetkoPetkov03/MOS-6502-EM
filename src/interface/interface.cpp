@@ -4,26 +4,27 @@
 #include <FL/fl_draw.H>
 #include <cstdio>
 #include <iostream>
+#include <ostream>
 #include <sstream>
+#include <string>
 
 void Editor::InitEditor() {
   this->width = (Fl::w() / 3);
   this->height = (Fl::h() / 1.5);
-  
+
   this->position[0] = Fl::w() / 3;
   this->position[1] = 100;
-
 }
 
 void Editor::Draw() {
 
-  editorSurface = new Fl_Box(position[0], position[1], width,height);
+  editorSurface = new Fl_Box(position[0], position[1], width, height);
   editorSurface->box(FL_EMBOSSED_BOX);
   editorSurface->labelcolor(FL_BLACK);
   editorSurface->labelfont(FL_BOLD);
   editorSurface->labelsize(20);
-  
- editorSurface->labeltype(FL_SHADOW_LABEL);
+
+  editorSurface->labeltype(FL_SHADOW_LABEL);
 }
 
 void Interface::InitWindow() {
@@ -34,6 +35,10 @@ void Interface::InitWindow() {
   window->fullscreen();
 
   editor.InitEditor();
+}
+
+std::string byteToBinaryString(Byte byte) {
+  return std::bitset<sizeof(Byte)>(byte).to_string();
 }
 
 void Interface::Draw(CPU &cpu, Mem &memory) {
@@ -49,11 +54,25 @@ void Interface::Draw(CPU &cpu, Mem &memory) {
 
   std::stringstream registerInfo;
   char flagBuffer[50];
+  cpu.SP++;
+  Byte stack = memory[0x0100 + cpu.SP];
+  cpu.SP--;
+
+  std::cout << "STACK POINTER: " << static_cast<float>(cpu.SP) << std::endl;
+
   sprintf(flagBuffer, "Z %i N %i O %i \n B %i D %i I %i \n Z %i C %i\n", cpu.Z,
           cpu.N, cpu.O, cpu.B, cpu.D, cpu.I, cpu.Z, cpu.C);
   registerInfo << "ACC: " << static_cast<float>(cpu.ACC) << "\n\n"
                << "RegisterX: " << static_cast<float>(cpu.RegisterX) << "\n\n"
                << "RegisterY: " << static_cast<float>(cpu.RegisterY) << "\n\n"
+               << "Stack: " << static_cast<float>(stack >> 7)
+               << static_cast<char>('0' + ((stack >> 6) & 1))
+               << static_cast<char>('0' + ((stack >> 4) & 1))
+               << static_cast<char>('0' + ((stack >> 3) & 1))
+               << static_cast<char>('0' + ((stack >> 2) & 1))
+               << static_cast<char>('0' + ((stack >> 1) & 1))
+               << static_cast<char>('0' + (stack & 1)) 
+                << "\n\n"
                << flagBuffer;
   registerText = registerInfo.str();
   registerBox->label(registerText.c_str());
@@ -65,7 +84,6 @@ void Interface::Draw(CPU &cpu, Mem &memory) {
   resetButton = new Fl_Button(width / 2 + 50, 10, 40, 40);
   resetButton->label("Reset");
   resetButton->callback(ResetPressed, this);
-
 }
 
 void Interface::EventLoop(CPU &cpu, u32 Cycles, Mem &memory, CycleInfo ci) {
@@ -97,7 +115,6 @@ void Interface::EventLoop(CPU &cpu, u32 Cycles, Mem &memory, CycleInfo ci) {
 
       memory[0x4244] = CPU::INS_LDA_IM;
       memory[0x4245] = 0x05;
-
 
       memory[0x4246] = CPU::INS_LDX_ZP;
       memory[0x4247] = 0x32;
@@ -137,5 +154,4 @@ void Interface::CleanUp() {
   delete this->runButton;
   delete this->resetButton;
   delete this->window;
-
 }

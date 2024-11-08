@@ -1,5 +1,5 @@
-#ifndef INTERFACE
-#define INTERFACE
+#ifndef __INTERFACE__
+#define __INTERFACE__
 
 #include "../cpu/cpu.hpp"
 #include <FL/Enumerations.H>
@@ -9,6 +9,7 @@
 #include <FL/Fl_Button.H>
 #include <FL/Fl_Widget.H>
 #include <FL/fl_draw.H>
+#include <bitset>
 #include <string>
 
 struct Editor {
@@ -57,5 +58,7 @@ struct Interface {
 
   int Exit();
 };
+
+std::string byteToBinaryString(Byte byte); 
 
 #endif

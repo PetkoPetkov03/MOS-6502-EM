@@ -36,8 +36,14 @@ void LoadIntoMem(Mem &mem) {
   mem[0x0032] = 0x03;
   mem[0x0043] = CPU::INS_PHA;
   mem[0x0044] = CPU::INS_ORA_IM;
-  mem[0x0045] = 0x03;
+  mem[0x0045] = 0x80;
 
+  /*mem[0x0046] = CPU::INS_PHP;*/
+  /**/
+  /*mem[0x0047] = CPU::INS_LDA_IM;*/
+  /*mem[0x0048] = 0x03;*/
+  /**/
+  /*mem[0x0049] = CPU::INS_PLP;*/
 }
 
 int VAPP(CPU& cpu, Mem& mem) {

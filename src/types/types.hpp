@@ -1,5 +1,5 @@
-#ifndef MOS_TYPES
-#define MOS_TYPES
+#ifndef __MOS_TYPES__
+#define __MOS_TYPES__
 
 #include "panic.h"
 #include <array>

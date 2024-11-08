@@ -5,6 +5,7 @@
 #include "opimpl.cpp"
 #include "ci.cpp"
 #include <cstdio>
+#include <iostream>
 
 void CPU::Reset(Mem &memory) {
   PC = 0xFFFC;
@@ -375,6 +376,7 @@ Word CPU::ReadWord(u32 &Cycles, Word Address, Mem &memory) {
 }
 
 void CPU::PushByte(Byte value, u32 &Cycles, Mem &memory) {
+  std::cout << "PUSH Stack pointer: " << static_cast<float>(SP) << std::endl;
   memory[0x0100 + SP] = value;
   SP--;
   Cycles -= 2;

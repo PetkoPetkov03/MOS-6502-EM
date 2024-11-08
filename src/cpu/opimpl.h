@@ -1,5 +1,5 @@
-#ifndef OPIMPL
-#define OPIMPL
+#ifndef __OPIMPL__
+#define __OPIMPL__
 
 #include "./cpu.hpp"
 
