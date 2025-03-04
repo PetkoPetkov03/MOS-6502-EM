@@ -7,6 +7,37 @@
 #include <cstdio>
 #include <iostream>
 
+void CPU::LoadIntoMem(Mem &mem) {
+  mem[0x4242] = CPU::INS_LDA_ZP;
+  mem[0x4243] = 0x42;
+  mem[0x0042] = 0x99;
+
+  mem[0xFFFC] = CPU::INS_JSR;
+  mem[0xFFFD] = 0x42;
+  mem[0xFFFE] = 0x42;
+
+  mem[0x4244] = CPU::INS_LDA_IM;
+  mem[0x4245] = 0x05;
+
+
+  mem[0x4246] = CPU::INS_JSR;
+  mem[0x4247] = 0x41;
+  mem[0x4248] = 0x00;
+  mem[0x0041] = CPU::INS_LDX_ZP;
+  mem[0x0042] = 0x32;
+  mem[0x0032] = 0x03;
+  mem[0x0043] = CPU::INS_PHA;
+  mem[0x0044] = CPU::INS_ORA_IM;
+  mem[0x0045] = 0x80;
+
+  /*mem[0x0046] = CPU::INS_PHP;*/
+  /**/
+  /*mem[0x0047] = CPU::INS_LDA_IM;*/
+  /*mem[0x0048] = 0x03;*/
+  /**/
+  /*mem[0x0049] = CPU::INS_PLP;*/
+}
+
 void CPU::Reset(Mem &memory) {
   PC = 0xFFFC;
   SP = 0x099;
@@ -704,6 +735,8 @@ void CPU::LoadFlags(u32 &Cycles, Byte Flags) {
 void CPU::Execute(u32 Cycles, CycleInfo ci, Mem &memory) {
   while (Cycles > 0) {
     Byte Instruction = Fetch(Cycles, memory);
+
+    std::cout << "INST " << static_cast<int>(Instruction) << std::endl;
 
     if(ci.I2FuncMap.find(Instruction) != ci.I2FuncMap.end()) {
       ci.I2FuncMap[Instruction](*this, Cycles, memory);

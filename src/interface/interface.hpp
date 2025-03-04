@@ -35,6 +35,7 @@ struct Interface {
   Fl_Window* window = nullptr;
 
   bool runPressed = false;
+  bool disablePressed = false;
   bool resetPressed = false;
 
   Fl_Box* registerBox = nullptr;

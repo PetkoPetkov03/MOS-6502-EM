@@ -24,6 +24,8 @@ struct CPU {
   Byte O : 1; // overflow
   Byte N : 1; // negative
 
+  void LoadIntoMem(Mem &memory);
+
   void Reset(Mem &memory);
 
   Byte Fetch(u32 &Cycles, Mem &memory);

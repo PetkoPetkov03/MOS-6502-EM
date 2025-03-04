@@ -1,5 +1,4 @@
 #include "./opimpl.h"
-#include <cstdio>
 
 void LDA_IM(CPU &cpu, u32 &Cycles, Mem &memory) {
   cpu.SetImmediate(Cycles, cpu.ACC, memory);

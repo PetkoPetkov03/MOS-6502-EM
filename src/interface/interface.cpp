@@ -97,36 +97,22 @@ void Interface::EventLoop(CPU &cpu, u32 Cycles, Mem &memory, CycleInfo ci) {
 
   window->show();
   while (Fl::wait()) {
-    if (runPressed == true) {
+    if (runPressed == true && disablePressed == false) {
       cpu.Execute(Cycles, ci, memory);
       runPressed = false;
+      disablePressed = true;
       this->Draw(cpu, memory);
     }
 
     if (resetPressed == true) {
       cpu.Reset(memory);
-      memory[0x4242] = CPU::INS_LDA_ZP;
-      memory[0x4243] = 0x42;
-      memory[0x0042] = 0x99;
 
-      memory[0xFFFC] = CPU::INS_JSR;
-      memory[0xFFFD] = 0x42;
-      memory[0xFFFE] = 0x42;
-
-      memory[0x4244] = CPU::INS_LDA_IM;
-      memory[0x4245] = 0x05;
-
-      memory[0x4246] = CPU::INS_LDX_ZP;
-      memory[0x4247] = 0x32;
-      memory[0x0032] = 0x03;
-
-      memory[0x4248] = CPU::INS_ORA_IM;
-      memory[0x4249] = 0x03;
-
+      cpu.LoadIntoMem(memory);
       LoadCycles(memory, ci, 0x00FF);
 
       resetPressed = false;
       runPressed = false;
+      disablePressed = false;
 
       this->Draw(cpu, memory);
     }
