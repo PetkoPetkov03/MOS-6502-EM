@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -17,6 +18,7 @@
 
 int VAPP(CPU& cpu, Mem& mem) {
   Interface GUInterface;
+  std::cout << "Hello" << std::endl;
 
   GUInterface.InitWindow();
 

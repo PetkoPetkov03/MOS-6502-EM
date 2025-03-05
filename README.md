@@ -12,6 +12,18 @@ Used Dave Poo's CPU emulator series first episode as a starting guide: https://w
 
 
 ## Build 
+
+Linux build
+```
+./nob-prereq.sh
+gcc -o src/nob.a src/nob.c
+./src/nob.a [compiler] ex: g++, clang, etc
+```
+
+Windows build
+In Development
+
+# !!!! DEPRECATED build solutions
 ### Windows
 
 # Download executable from:

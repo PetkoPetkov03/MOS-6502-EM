@@ -2,8 +2,6 @@
 #include "../memory/memory.hpp"
 #include "../types/types.hpp"
 #include "ci.hpp"
-#include "opimpl.cpp"
-#include "ci.cpp"
 #include <cstdio>
 #include <iostream>
 
